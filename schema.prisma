@@ -1,0 +1,83 @@
+// Amica - Meetup Coordination Agent
+// Database schema for multi-user async state management
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER - Identity & Attribution
+// ============================================
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique  // Email is the natural identifier
+  name      String              // Display name (can update)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  organizedGatherings Gathering[] @relation("OrganizerRelation")
+  responses           Response[]
+
+  @@map("users")
+}
+
+// ============================================
+// GATHERING - Coordination Event
+// ============================================
+model Gathering {
+  id           String          @id @default(uuid())
+  organizerId  String          @map("organizer_id")
+  title        String
+  location     String          // E.g., "Brunswick, VIC, Australia"
+  timezone     String          // IANA timezone: "Australia/Melbourne"
+  timeOptions  Json            @map("time_options")  // Array of {start: ISO8601, end: ISO8601, label?: string}
+  rsvpDeadline DateTime        @map("rsvp_deadline") // When to trigger agent if not all responded
+  status       GatheringStatus @default(COLLECTING)
+  agentOutput  Json?           @map("agent_output")  // Nullable - only after agent runs
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  // Relationships
+  organizer User       @relation("OrganizerRelation", fields: [organizerId], references: [id], onDelete: Restrict)
+  responses Response[]
+
+  @@map("gatherings")
+}
+
+// Gathering lifecycle states
+enum GatheringStatus {
+  COLLECTING // Waiting for responses
+  COMPLETED  // Agent ran successfully, recommendations ready
+  FAILED     // Agent encountered error
+  CANCELLED  // Organizer cancelled the gathering
+}
+
+// ============================================
+// RESPONSE - Rich Join Table (Participation + Preferences)
+// ============================================
+model Response {
+  id                       String   @id @default(uuid())
+  gatheringId              String   @map("gathering_id")
+  userId                   String?  @map("user_id") // Nullable - if user deleted, preserve response
+  availableTimeSlotIndices Int[]    @map("available_time_slot_indices") // Array of indexes into gathering.timeOptions
+  budgetMax                Int?     @map("budget_max") // Max $ per person, nullable = flexible
+  cuisinePreferences       Json     @default("[]") @map("cuisine_preferences") // Array of strings
+  dietaryRestrictions      String?  @map("dietary_restrictions") // Free text, nullable
+  additionalNotes          String?  @map("additional_notes") // Catch-all for edge cases
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  gathering Gathering @relation(fields: [gatheringId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Constraints
+  @@unique([gatheringId, userId], name: "one_response_per_user_per_gathering")
+  @@map("responses")
+}
