@@ -517,3 +517,129 @@ Understanding the Current Config
   - resolveJsonModule - Lets you import JSON files (like import pkg from 
   './package.json')
 
+  🎯 Big Picture: How Your Backend Works
+
+  The Flow: From HTTP Request → Database → Response
+
+  1. Client sends request (curl/frontend)
+     ↓
+  2. Express server receives it (index.ts)
+     ↓
+  3. Middleware processes it (cors, json parsing)
+     ↓
+  4. Router handles the route (users.ts)
+     ↓
+  5. Prisma queries database (db.ts → PostgreSQL)
+     ↓
+  6. Data comes back from database
+     ↓
+  7. Router sends JSON response
+     ↓
+  8. Client receives response
+
+  ---
+  File Structure & What Each Does
+
+  amica/
+  ├── schema.prisma          # Database blueprint (defines User, Gathering, Response
+  tables)
+  ├── .env                   # Secrets (DATABASE_URL)
+  ├── tsconfig.json         # TypeScript compiler settings
+  ├── package.json          # Dependencies & scripts
+  │
+  └── src/                  # Your TypeScript code
+      ├── index.ts          # 🚪 ENTRY POINT - Main server
+      ├── db.ts             # 🗄️  Database client (Prisma singleton)
+      └── routes/
+          └── users.ts      # 👤 User endpoints logic
+
+  ---
+  How The Pieces Connect
+
+  1. schema.prisma → Database
+
+  schema.prisma (models)
+          ↓
+     npx prisma migrate dev
+          ↓
+  Creates actual PostgreSQL tables
+
+  2. schema.prisma → TypeScript Types
+
+  schema.prisma
+          ↓
+     npx prisma generate
+          ↓
+  Creates @prisma/client with types
+          ↓
+  You get: prisma.user.create() with autocomplete!
+
+  3. Request Flow Example: POST /users
+
+  // 1. REQUEST COMES IN
+  curl -X POST http://localhost:3000/users -d 
+  '{"email":"alice@example.com","name":"Alice"}'
+
+  // 2. EXPRESS RECEIVES IT (index.ts)
+  app.use('/users', userRoutes);  // "Requests to /users go to userRoutes"
+
+  // 3. ROUTER HANDLES IT (routes/users.ts)
+  router.post('/', async (req, res) => {
+    const { email, name } = req.body;  // Extract data from request
+
+    // 4. PRISMA TALKS TO DATABASE (db.ts)
+    const user = await prisma.user.create({
+      data: { email, name }
+    });
+    // Behind the scenes: Prisma runs SQL:
+    // INSERT INTO users (id, email, name, created_at, updated_at) 
+    // VALUES (uuid(), 'alice@example.com', 'Alice', now(), now())
+
+    // 5. SEND RESPONSE BACK
+    res.status(201).json(user);
+  });
+
+  ---
+  The "Magic" Tools That Make It Work
+
+  | Tool        | What It Does                   | Why We Need It
+         |
+  |-------------|--------------------------------|------------------------------------
+  -------|
+  | TypeScript  | Adds types to JavaScript       | Catches bugs before runtime,
+  autocomplete |
+  | ts-node-dev | Runs .ts files directly        | Dev mode - fast restarts
+         |
+  | tsc         | Compiles .ts → .js             | Production mode - optimized code
+         |
+  | Express     | Web framework                  | Handles HTTP requests/responses
+         |
+  | Prisma      | ORM (Object-Relational Mapper) | Type-safe database queries
+         |
+  | PostgreSQL  | Database                       | Stores actual data
+         |
+  | dotenv      | Loads .env file                | Keeps secrets out of code
+         |
+  | CORS        | Cross-Origin Resource Sharing  | Lets frontend (different port)
+  access API |
+
+  ---
+  Development vs Production
+
+  Development (what you're doing now):
+  npm run dev
+    → ts-node-dev runs src/index.ts
+    → TypeScript compiled in memory
+    → Auto-restarts on file changes
+    → NO dist/ folder created
+
+  Production (deployment):
+  npm run build
+    → tsc compiles all .ts files
+    → Creates dist/ folder with .js files
+
+  npm start
+    → node dist/index.js
+    → Runs plain JavaScript
+    → No TypeScript needed on server
+

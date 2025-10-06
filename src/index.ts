@@ -7,8 +7,10 @@ import cors from 'cors';
 //Loads variables from .env file
 import dotenv from 'dotenv';
 
-// Import user routes
+// Import user routes and gathering routes, and responses routes
   import userRoutes from './routes/users';
+  import gatheringRoutes from './routes/gatherings';
+  import responseRoutes from './routes/responses';
 
 // Load environment variables from .env file and loads DATABASE_URL and other variables to process.env
 dotenv.config();
@@ -26,7 +28,10 @@ app.use(cors());
 app.use(express.json());
 // Make any requests to /users/* handled by userRoutes router
 app.use('/users', userRoutes);
-
+// Make any requests to /gatherings/* handled by gatheringRoutes router
+app.use('/gatherings', gatheringRoutes);
+// Make any requests to /responses/* handled by responsesRoutes router
+app.use('/responses', responseRoutes);
 
 // Test route 
 app.get('/', (req, res) => {
