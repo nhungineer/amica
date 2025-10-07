@@ -1,6 +1,6 @@
 // Import Router and Prisma client
 import { Router } from 'express';
-import prisma from '../db';
+import { prisma } from '../db';
 // Create router instance
   const router = Router();
 

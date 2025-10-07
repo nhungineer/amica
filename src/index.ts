@@ -12,6 +12,10 @@ import dotenv from 'dotenv';
   import gatheringRoutes from './routes/gatherings';
   import responseRoutes from './routes/responses';
 
+// Import agent trigger route for testing
+  import agentTriggerRoutes from './routes/agent-trigger';
+
+
 // Load environment variables from .env file and loads DATABASE_URL and other variables to process.env
 dotenv.config();
 
@@ -32,6 +36,9 @@ app.use('/users', userRoutes);
 app.use('/gatherings', gatheringRoutes);
 // Make any requests to /responses/* handled by responsesRoutes router
 app.use('/responses', responseRoutes);
+// Redirect requests to /agent-trigger/* to be handled by agentTriggerRoutes 
+  app.use('/agent-trigger', agentTriggerRoutes);
+
 
 // Test route 
 app.get('/', (req, res) => {

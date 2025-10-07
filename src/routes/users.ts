@@ -2,7 +2,7 @@
   import { Router } from 'express';
 
   // Import Prisma client from src/db.ts
-  import prisma from '../db';
+  import { prisma } from '../db';
 
   // Create router - a mini Express app for user routes
 
