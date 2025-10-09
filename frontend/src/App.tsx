@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "./ResultsView.css"; // Add link to CSS file
+import { CreateGathering } from "./CreateGathering";
 
 type TimeOption = {
   start: string;
@@ -63,25 +64,46 @@ type Gathering = {
     };
   } | null;
 };
-
+// Set which view to show, default to 'create' eg show form first
 function App() {
+  const [currentView, setCurrentView] = useState<"create" | "results">(
+    "create"
+  );
   const [gathering, setGathering] = useState<Gathering | null>(null);
+  //Callback function: create gathering based on user form -> POST to backend -> getback gathering ID
 
-  useEffect(() => {
-    fetch(
-      "http://localhost:3000/gatherings/a7430f9e-7cda-42fb-b3c1-a46eb60fe776"
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Fetched gathering:", data);
-        setGathering(data);
-      })
-      .catch((error) => console.error("Error fetching gathering:", error));
-  }, []);
+  const handleGatheringCreated = (gatheringId: string) => {
+    console.log("Gathering created:", gatheringId);
+    fetchGathering(gatheringId);
+    setCurrentView("results");
+  };
 
-  if (!gathering) {
-    return <div>Loading...</div>;
+  const fetchGathering = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:3000/gatherings/${id}`);
+      const data = await response.json();
+      console.log("Fetched gathering:", data);
+      setGathering(data); // <- store in state all the data for the results view
+    } catch (error) {
+      console.error("Error fetching gathering:", error);
+    }
+  };
+
+  // Show create form
+  if (currentView === "create") {
+    return <CreateGathering onGatheringCreated={handleGatheringCreated} />;
   }
+
+  // Show loading while fetching
+  if (!gathering) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        Loading gathering...
+      </div>
+    );
+  }
+
+  // Show results view
 
   return (
     <div className="results-container">
@@ -125,6 +147,18 @@ function App() {
             </div>
           ))}
         </div>
+        {gathering.responses.length === 0 && (
+          <div style={{ padding: "40px", textAlign: "center", color: "#666" }}>
+            <h3>👥 Waiting for Responses</h3>
+            <p>Share the gathering link with friends to collect preferences!</p>
+            <p>
+              <small>
+                Once responses are in, you can run the agent to get venue
+                recommendations.
+              </small>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* RIGHT COLUMN */}
