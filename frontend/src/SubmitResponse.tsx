@@ -6,6 +6,7 @@ type TimeOption = {
   label: string;
 };
 
+// Receiving onResponseSubmitted as prop from App.tsx
 export function SubmitResponse({
   gatheringId,
   timeOptions,

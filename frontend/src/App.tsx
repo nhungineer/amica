@@ -71,8 +71,11 @@ function App() {
     "create" | "respond" | "results"
   >("create"); // ← Add 'respond'
   const [gathering, setGathering] = useState<Gathering | null>(null);
-  //Callback function: create gathering based on user form -> POST to backend -> getback gathering ID
 
+  // Add agent loading state
+  const [agentLoading, setAgentLoading] = useState(false);
+
+  //Callback function: create gathering based on user form -> POST to backend -> getback gathering ID
   const handleGatheringCreated = (gatheringId: string) => {
     console.log("Gathering created:", gatheringId);
     fetchGathering(gatheringId);
@@ -98,12 +101,45 @@ function App() {
     setCurrentView("results");
   };
 
-  // Show create form
+  // Add function to trigger backend agents and refresh the data
+  const handleAgentTrigger = async () => {
+    if (!gathering) return;
+
+    setAgentLoading(true);
+
+    try {
+      console.log("Triggering agent for gathering:", gathering.id);
+
+      // POST to backend to trigger agents
+      const response = await fetch(
+        `http://localhost:3000/agent-trigger/${gathering.id}`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to trigger agent");
+      }
+
+      console.log("Agent completed! Refreshing gathering data...");
+
+      // Refresh gathering to get the agent output
+      await fetchGathering(gathering.id);
+    } catch (error) {
+      console.error("Error triggering agent:", error);
+    } finally {
+      setAgentLoading(false);
+      // Always turn off agent even if error occurs
+    }
+  };
+
+  // Show create form - app passes the callback to CreateGathering
   if (currentView === "create") {
     return <CreateGathering onGatheringCreated={handleGatheringCreated} />;
   }
 
-  // Show response form
+  // Show response form - App.tsx passess onResponseSubmitted as prop to SubmitResponses
   if (currentView === "respond" && gathering) {
     return (
       <SubmitResponse
@@ -124,6 +160,7 @@ function App() {
   }
 
   // Show results view
+
   return (
     <div style={{ padding: "20px", maxWidth: "1400px", margin: "0 auto" }}>
       {/* Add button to submit response */}
@@ -157,6 +194,24 @@ function App() {
         >
           🔄 Refresh
         </button>
+        {/* Only show if we have responses but no agent output yet */}
+        {gathering.responses.length > 0 && !gathering.agentOutput && (
+          <button
+            onClick={handleAgentTrigger}
+            disabled={agentLoading}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: agentLoading ? "#ccc" : "#FF9800",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: agentLoading ? "not-allowed" : "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            {agentLoading ? "🤖 Running Agent..." : "🤖 Trigger Agent"}
+          </button>
+        )}
       </div>
       {/* Waiting for responses message */}
       {gathering.responses.length === 0 && (
@@ -183,7 +238,7 @@ function App() {
           </p>
         </div>
       )}
-      // Show results view return (
+
       <div className="results-container">
         {/* LEFT COLUMN */}
         <div className="left-column">
@@ -319,7 +374,6 @@ function App() {
           </div>
         </div>
       </div>
-      );
     </div>
   );
 }
