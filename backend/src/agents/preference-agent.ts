@@ -23,14 +23,20 @@ TIME OPTIONS (provided by organizer):
 ${timeOptions.map((opt, idx) => `${idx}: ${opt.label}`).join('\n')}
 
 USER RESPONSES:
-${responses.map((r, idx) => `
+${responses.map((r, idx) => {
+  const cuisinePrefs = Array.isArray(r.cuisinePreferences) && r.cuisinePreferences.length > 0
+    ? r.cuisinePreferences.join(', ')
+    : 'no preference';
+
+  return `
 Person ${idx + 1}:
 - Available time slot indices: ${r.availableTimeSlotIndices.join(', ')}
 - Budget max: $${r.budgetMax || 'flexible'}
-- Cuisine preferences: ${r.cuisinePreferences.length > 0 ? r.cuisinePreferences : 'no preference'}
+- Cuisine preferences: ${cuisinePrefs}
 - Dietary restrictions: ${r.dietaryRestrictions || 'none'}
 - Additional notes: ${r.additionalNotes || 'none'}
-`).join('\n---\n')}
+`;
+}).join('\n---\n')}
 
 TASK:
 Analyze these responses and identify:
