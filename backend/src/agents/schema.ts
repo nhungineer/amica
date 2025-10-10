@@ -7,8 +7,7 @@ import { z } from 'zod';
 export const PreferenceAnalysisSchema = z.object({
 // Recommended time slot based on group availability
 recommendedTimeSlot: z.object({
-    index: z.number().describe('Index of the time slot from the gathering 
-time_options array'),
+    index: z.number().describe('Index of the time slot from the gathering time_options array'),
     label: z.string().describe('Human-readable time (e.g., "Saturday 6pm")'),
     availableCount: z.number().describe('Number of people available at this time')
 }),
@@ -21,12 +20,10 @@ budgetRange: z.object({
 }),
 
 // Cuisine preferences consensus
-cuisinePreferences: z.array(z.string()).describe('List of cuisines that accommodate
-the group (prioritized)'),
+cuisinePreferences: z.array(z.string()).describe('List of cuisines that accommodate the group (prioritized)'),
 
 // Dietary restrictions to consider
-dietaryRestrictions: z.array(z.string()).describe('Consolidated list of dietary 
-restrictions from all responses'),
+dietaryRestrictions: z.array(z.string()).describe('Consolidated list of dietary restrictions from all responses'),
 
 // Summary of the analysis
 summary: z.string().describe('Brief explanation of how consensus was reached')
@@ -49,12 +46,10 @@ reason: z.string().describe('Why this venue matches the group preferences')
  * This agent searches for venues and recommends the top 3
  */
 export const VenueRecommendationSchema = z.object({
-recommendations: z.array(VenueSchema).length(3).describe('Top 3 venue 
-recommendations'),
+recommendations: z.array(VenueSchema).length(3).describe('Top 3 venue recommendations'),
 
 // Overall recommendation and next steps
-recommendation: z.string().describe('Overall recommendation and suggested next 
-steps for the organizer'),
+recommendation: z.string().describe('Overall recommendation and suggested next steps for the organizer'),
 
 // Metadata
 searchedAt: z.string().describe('ISO timestamp of when the search was performed'),
