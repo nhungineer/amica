@@ -63,7 +63,11 @@ import axios from 'axios';
         throw new Error(`Could not find location: ${location}`);
       }
 
-      const { lat, lng } = geocodeResponse.data.results[0].geometry.location;
+      const firstResult = geocodeResponse.data.results[0];
+      if (!firstResult) {
+        throw new Error(`Could not find location: ${location}`);
+      }
+      const { lat, lng } = firstResult.geometry.location;
 
       // Step 2: Search for places near that location
       const placesUrl = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
@@ -112,12 +116,15 @@ import axios from 'axios';
 
     if (cuisineTypes.length > 0) {
       // Convert "italian_restaurant" to "Italian"
-      return cuisineTypes[0]
-        .replace('_restaurant', '')
-        .replace('_', ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+      const firstCuisine = cuisineTypes[0];
+      if (firstCuisine) {
+        return firstCuisine
+          .replace('_restaurant', '')
+          .replace('_', ' ')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      }
     }
 
     return 'Restaurant'; // Default fallback

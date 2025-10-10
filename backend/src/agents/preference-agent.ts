@@ -1,14 +1,14 @@
 import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { PreferenceAnalysisSchema, type PreferenceAnalysis } from './schemas';
-import type { Response } from '@prisma/client';
+import type { Response as GatheringResponse } from '@prisma/client';
 
 /**
  * Preference Analysis Agent
  * Analyzes user responses to find group consensus on timing, budget, and preferences
  */
 export async function analyzePreferences(
-  responses: Response[],
+  responses: GatheringResponse[],
   timeOptions: any[],
   gatheringLocation: string
 ): Promise<PreferenceAnalysis> {
