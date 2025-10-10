@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 
 type TimeOption = {
   start: string;
@@ -6,16 +7,13 @@ type TimeOption = {
   label: string;
 };
 
-// Receiving onResponseSubmitted as prop from App.tsx
-export function SubmitResponse({
-  gatheringId,
-  timeOptions,
-  onResponseSubmitted,
-}: {
-  gatheringId: string;
-  timeOptions: TimeOption[];
-  onResponseSubmitted: () => void;
-}) {
+export function SubmitResponse() {
+  // Get gathering ID from URL parameter
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  // State for time options (fetched from gathering)
+  const [timeOptions, setTimeOptions] = useState<TimeOption[]>([]);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([]);
   const [budgetMax, setBudgetMax] = useState("");
   const [cuisinePreferences, setCuisinePreferences] = useState("");
@@ -23,6 +21,24 @@ export function SubmitResponse({
   const [selectedUser, setSelectedUser] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch gathering data to get time options
+  useEffect(() => {
+    const fetchGathering = async () => {
+      if (!id) return;
+
+      try {
+        const response = await fetch(`http://localhost:3000/gatherings/${id}`);
+        const data = await response.json();
+        setTimeOptions(data.timeOptions);
+      } catch (error) {
+        console.error("Error fetching gathering:", error);
+        setError("Failed to load gathering details");
+      }
+    };
+
+    fetchGathering();
+  }, [id]);
 
   const handleTimeSlotToggle = (index: number) => {
     if (selectedTimeSlots.includes(index)) {
@@ -47,7 +63,7 @@ export function SubmitResponse({
 
     try {
       const responseData = {
-        gatheringId,
+        gatheringId: id,
         userId: selectedUser,
         availableTimeSlotIndices: selectedTimeSlots,
         budgetMax: budgetMax ? parseInt(budgetMax) : null,
@@ -77,7 +93,8 @@ export function SubmitResponse({
       setDietaryRestrictions("");
       setSelectedUser("");
 
-      onResponseSubmitted();
+      // Navigate back to results page
+      navigate(`/gathering/${id}`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to submit response"

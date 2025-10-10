@@ -1,10 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export function CreateGathering({
-  onGatheringCreated,
-}: {
-  onGatheringCreated: (id: string) => void;
-}) {
+export function CreateGathering() {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [timezone, setTimezone] = useState("Australia/Melbourne");
@@ -62,8 +60,8 @@ export function CreateGathering({
       const data = await response.json();
       console.log("Created gathering:", data);
 
-      // Call parent function with new gathering ID
-      onGatheringCreated(data.id);
+      // Navigate to results page for the new gathering
+      navigate(`/gathering/${data.id}`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create gathering"
