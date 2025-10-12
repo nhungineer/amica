@@ -23,7 +23,7 @@ dotenv.config();
 const app = express();
 
 // Use port from environment variable, or default to 3000
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 // Middleware - runs on every requests
 // Allow requests from frontend (production and local dev)
