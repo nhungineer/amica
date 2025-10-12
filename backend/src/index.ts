@@ -25,9 +25,15 @@ const app = express();
 // Use port from environment variable, or default to 3000
 const PORT = process.env.PORT || 3000;
 
-// Middleware - runs on every requests 
-// Allow requests from any origin (dev only, restrict to FE URL later)
-app.use(cors());
+// Middleware - runs on every requests
+// Allow requests from frontend (production and local dev)
+app.use(cors({
+  origin: [
+    'https://amica-rho.vercel.app',  // Production frontend
+    'http://localhost:5173'           // Local development
+  ],
+  credentials: true
+}));
 // Parse JSON request bodies 
 app.use(express.json());
 // Make any requests to /users/* handled by userRoutes router
