@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { API_URL } from "./config";
 
 type TimeOption = {
   start: string;
@@ -28,7 +29,7 @@ export function SubmitResponse() {
       if (!id) return;
 
       try {
-        const response = await fetch(`http://localhost:3000/gatherings/${id}`);
+        const response = await fetch(`${API_URL}/gatherings/${id}`);
         const data = await response.json();
         setTimeOptions(data.timeOptions);
       } catch (error) {
@@ -73,7 +74,7 @@ export function SubmitResponse() {
         dietaryRestrictions: dietaryRestrictions || null,
       };
 
-      const response = await fetch("http://localhost:3000/responses", {
+      const response = await fetch(`${API_URL}/responses`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(responseData),

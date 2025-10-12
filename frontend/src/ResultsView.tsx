@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./ResultsView.css";
+import { API_URL } from "./config";
 
 // TypeScript types (duplicated from App.tsx for now)
 type TimeOption = {
@@ -79,7 +80,7 @@ export function ResultsView() {
   // Function to fetch gathering data from backend
   const fetchGathering = async (gatheringId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/gatherings/${gatheringId}`);
+      const response = await fetch(`${API_URL}/gatherings/${gatheringId}`);
       const data = await response.json();
       console.log("Fetched gathering:", data);
       setGathering(data);
@@ -105,7 +106,7 @@ export function ResultsView() {
       console.log("Triggering agent for gathering:", gathering.id);
 
       const response = await fetch(
-        `http://localhost:3000/agent-trigger/${gathering.id}`,
+        `${API_URL}/agent-trigger/${gathering.id}`,
         {
           method: "POST",
         }

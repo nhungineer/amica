@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "./config";
 
 export function CreateGathering() {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ export function CreateGathering() {
         rsvpDeadline: "2025-10-10T12:00:00Z",
       };
 
-      const response = await fetch("http://localhost:3000/gatherings", {
+      const response = await fetch(`${API_URL}/gatherings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(gatheringData),
