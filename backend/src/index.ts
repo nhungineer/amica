@@ -52,6 +52,7 @@ app.get('/', (req, res) => {
 });
 
 //Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// Bind to 0.0.0.0 to make server accessible from Railway's network
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
 });
