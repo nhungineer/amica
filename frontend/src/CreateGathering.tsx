@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "./config";
-
+import { useAuth } from "./AuthContext";
 export function CreateGathering() {
   const navigate = useNavigate();
+  const { token, isAuthenticated } = useAuth();
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    navigate("/login?redirect=/");
+    return null;
+  }
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [timezone, setTimezone] = useState("Australia/Melbourne");
@@ -24,7 +30,6 @@ export function CreateGathering() {
     try {
       // For now, hardcode some test data for time options
       const gatheringData = {
-        organizerId: "5648f6b3-f335-4c13-a09e-821ff8db6d8a", // Alice's ID
         title,
         location,
         timezone,
@@ -50,7 +55,10 @@ export function CreateGathering() {
 
       const response = await fetch(`${API_URL}/gatherings`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ← Add JWT!
+        },
         body: JSON.stringify(gatheringData),
       });
 

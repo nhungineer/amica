@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -9,7 +9,6 @@ export function Login() {
   const [sent, setSent] = useState(false); // Success - show confirmation
   const [error, setError] = useState(""); // Error msg if API fails
   // Redirect logic
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
 
