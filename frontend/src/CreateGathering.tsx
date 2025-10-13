@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "./config";
 import { useAuth } from "./AuthContext";
 export function CreateGathering() {
   const navigate = useNavigate();
   const { token, isAuthenticated } = useAuth();
+
   // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login?redirect=/");
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Show loading while checking auth
   if (!isAuthenticated) {
-    navigate("/login?redirect=/");
-    return null;
+    return null; // or return <div>Loading...</div>
   }
+
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [timezone, setTimezone] = useState("Australia/Melbourne");
