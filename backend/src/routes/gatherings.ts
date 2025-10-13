@@ -1,23 +1,27 @@
 // Import Router and Prisma client
 import { Router } from "express";
 import { prisma } from "../db";
+import { requireAuth } from "../middleware/auth";
 // Create router instance
 const router = Router();
 
-// POST /gatherings - Create a new gathering
-// Handle POST requests, extract required fields from request body (organiserID, title, location, timezone, options, rsvp deadline)
+// POST /gatherings - Create a new gathering (PROTECTED - requires auth)
+// Handle POST requests, extract required fields from request body
+// organizerId comes from authenticated user (req.user)
 // Prisma inserts new gathering into database
 // new Date(rsvpDeadline) converts string to javaScript date object
-router.post("/", async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   try {
     const {
-      organizerId,
       title,
       location,
       timezone,
       timeOptions,
       rsvpDeadline,
     } = req.body;
+
+    // Get organizerId from authenticated user
+    const organizerId = req.user!.userId;
 
     const gathering = await prisma.gathering.create({
       data: {
