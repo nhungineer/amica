@@ -55,6 +55,7 @@ type Gathering = {
   status: string;
   timeOptions: TimeOption[];
   responses: Response[];
+  rsvpDeadline: string;
   agentOutput: {
     preferenceAnalysis: PreferenceAnalysis;
     venueRecommendation: {
@@ -94,7 +95,7 @@ export function ResultsView() {
     if (id) {
       fetchGathering(id);
     }
-  }, [id]);  // Re-run if ID in URL changes
+  }, [id]); // Re-run if ID in URL changes
 
   // Function to trigger AI agents
   const handleAgentTrigger = async () => {
@@ -105,12 +106,9 @@ export function ResultsView() {
     try {
       console.log("Triggering agent for gathering:", gathering.id);
 
-      const response = await fetch(
-        `${API_URL}/agent-trigger/${gathering.id}`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`${API_URL}/agent-trigger/${gathering.id}`, {
+        method: "POST",
+      });
 
       if (!response.ok) {
         throw new Error("Failed to trigger agent");
@@ -188,6 +186,81 @@ export function ResultsView() {
           </button>
         )}
       </div>
+      {/* Available Time Slots Section - NEW! */}
+      <div
+        style={{
+          padding: "20px",
+          backgroundColor: "#f5f5f5",
+          borderRadius: "8px",
+          marginBottom: "20px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "15px",
+          }}
+        >
+          <h3 style={{ margin: 0 }}>⏰ Available Time Slots</h3>
+          <div
+            style={{
+              backgroundColor: "#fff3cd",
+              padding: "8px 12px",
+              borderRadius: "4px",
+              border: "1px solid #ffc107",
+            }}
+          >
+            <span
+              style={{ fontSize: "12px", color: "#856404", fontWeight: "bold" }}
+            >
+              ⏳ RSVP by:{" "}
+              {new Date(gathering.rsvpDeadline).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
+        </div>
+        <p style={{ fontSize: "14px", color: "#666", marginBottom: "15px" }}>
+          Choose which times work for you when submitting your response:
+        </p>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {gathering.timeOptions.map((option, index) => (
+            <div
+              key={index}
+              style={{
+                padding: "10px 15px",
+                backgroundColor: "white",
+                border: "2px solid #e9e9e9ff",
+                borderRadius: "6px",
+                fontSize: "14px",
+              }}
+            >
+              <strong>{option.label}</strong>
+              <div
+                style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}
+              >
+                {new Date(option.start).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}{" "}
+                -{" "}
+                {new Date(option.end).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Waiting for responses message */}
       {gathering.responses.length === 0 && (
@@ -223,7 +296,7 @@ export function ResultsView() {
             <p>🍽️ {gathering.title}</p>
             <p>📍 {gathering.location}</p>
             <p>
-              📅{" "}
+              📅
               {
                 gathering.agentOutput?.preferenceAnalysis.recommendedTimeSlot
                   .label
