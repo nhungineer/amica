@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./ResultsView.css";
 import { API_URL } from "./config";
+import { colors, commonStyles } from "./styles";
 
 // TypeScript types (duplicated from App.tsx for now)
 type TimeOption = {
@@ -139,14 +140,10 @@ export function ResultsView() {
       <div style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
         <button
           onClick={() => navigate(`/gathering/${gathering.id}/respond`)}
+          className="btn-primary"
           style={{
-            padding: "10px 20px",
-            backgroundColor: "#2196F3",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontWeight: "bold",
+            ...commonStyles.buttonPrimary,
+            backgroundColor: colors.primary,
           }}
         >
           📝 Submit Response
@@ -154,15 +151,8 @@ export function ResultsView() {
 
         <button
           onClick={() => fetchGathering(gathering.id)}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontWeight: "bold",
-          }}
+          className="btn-secondary"
+          style={commonStyles.buttonSecondary}
         >
           🔄 Refresh
         </button>
@@ -172,14 +162,12 @@ export function ResultsView() {
           <button
             onClick={handleAgentTrigger}
             disabled={agentLoading}
+            className="btn-success"
             style={{
-              padding: "10px 20px",
-              backgroundColor: agentLoading ? "#ccc" : "#FF9800",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
+              ...commonStyles.buttonPrimary,
+              backgroundColor: agentLoading ? colors.border : colors.success,
               cursor: agentLoading ? "not-allowed" : "pointer",
-              fontWeight: "bold",
+              opacity: agentLoading ? 0.6 : 1,
             }}
           >
             {agentLoading ? "🤖 Running Agent..." : "🤖 Trigger Agent"}
@@ -189,10 +177,12 @@ export function ResultsView() {
       {/* Available Time Slots Section - NEW! */}
       <div
         style={{
-          padding: "20px",
-          backgroundColor: "#f5f5f5",
-          borderRadius: "8px",
+          padding: "24px",
+          backgroundColor: colors.white,
+          borderRadius: "12px",
           marginBottom: "20px",
+          border: `1px solid ${colors.border}`,
+          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
         }}
       >
         <div
@@ -206,14 +196,14 @@ export function ResultsView() {
           <h3 style={{ margin: 0 }}>⏰ Available Time Slots</h3>
           <div
             style={{
-              backgroundColor: "#fff3cd",
-              padding: "8px 12px",
-              borderRadius: "4px",
-              border: "1px solid #ffc107",
+              backgroundColor: "#fef3c7",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: `2px solid ${colors.warning}`,
             }}
           >
             <span
-              style={{ fontSize: "12px", color: "#856404", fontWeight: "bold" }}
+              style={{ fontSize: "13px", color: "#92400e", fontWeight: "600" }}
             >
               ⏳ RSVP by:{" "}
               {new Date(gathering.rsvpDeadline).toLocaleDateString("en-US", {
@@ -226,24 +216,37 @@ export function ResultsView() {
             </span>
           </div>
         </div>
-        <p style={{ fontSize: "14px", color: "#666", marginBottom: "15px" }}>
+        <p
+          style={{
+            fontSize: "14px",
+            color: colors.textLight,
+            marginBottom: "15px",
+            marginTop: "12px",
+          }}
+        >
           Choose which times work for you when submitting your response:
         </p>
+        {/* Individual Time slot card */}
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {gathering.timeOptions.map((option, index) => (
             <div
               key={index}
               style={{
-                padding: "10px 15px",
-                backgroundColor: "white",
-                border: "2px solid #e9e9e9ff",
-                borderRadius: "6px",
+                padding: "12px 18px",
+                backgroundColor: colors.background,
+                border: `2px solid ${colors.border}`,
+                borderRadius: "8px",
                 fontSize: "14px",
+                transition: "all 0.2s",
               }}
             >
-              <strong>{option.label}</strong>
+              <strong style={{ color: colors.text }}>{option.label}</strong>
               <div
-                style={{ fontSize: "12px", color: "#666", marginTop: "4px" }}
+                style={{
+                  fontSize: "12px",
+                  color: colors.textLight,
+                  marginTop: "4px",
+                }}
               >
                 {new Date(option.start).toLocaleTimeString("en-US", {
                   hour: "numeric",
@@ -268,19 +271,22 @@ export function ResultsView() {
           style={{
             padding: "40px",
             textAlign: "center",
-            color: "#666",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
+            color: colors.textLight,
+            backgroundColor: colors.background,
+            borderRadius: "12px",
             marginBottom: "20px",
+            border: `1px solid ${colors.border}`,
           }}
         >
-          <h3>👥 Waiting for Responses</h3>
-          <p>
+          <h3 style={{ color: colors.text, marginTop: 0 }}>
+            👥 Waiting for Responses
+          </h3>
+          <p style={{ color: colors.textLight, marginBottom: "12px" }}>
             Click "Submit Response" above to add responses from Bob, Charlie, or
             Alice!
           </p>
-          <p>
-            <small>
+          <p style={{ marginBottom: 0 }}>
+            <small style={{ color: colors.textLight }}>
               Once you have responses, you can trigger the agent to get venue
               recommendations.
             </small>
@@ -355,7 +361,7 @@ export function ResultsView() {
               </div>
 
               <div>
-                <h4>Budget Range</h4>
+                <h4>Budget</h4>
                 <p>
                   ${gathering.agentOutput?.preferenceAnalysis.budgetRange.min}-$
                   {gathering.agentOutput?.preferenceAnalysis.budgetRange.max}
