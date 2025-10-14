@@ -2,33 +2,55 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "./config";
 import { useAuth } from "./AuthContext";
+// Key for localStorage
+const FORM_DATA_KEY = "createGathering_formData";
+
 export function CreateGathering() {
   const navigate = useNavigate();
   const { token, isAuthenticated } = useAuth();
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login?redirect=/");
-    }
-  }, [isAuthenticated, navigate]);
-
-  // Show loading while checking auth
-  if (!isAuthenticated) {
-    return null; // or return <div>Loading...</div>
-  }
-
+  // State for form fields
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [timezone, setTimezone] = useState("Australia/Melbourne");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Restore form data from localStorage on mount (after login redirect)
+  useEffect(() => {
+    const savedData = localStorage.getItem(FORM_DATA_KEY);
+
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setTitle(parsed.title || "");
+        setLocation(parsed.location || "");
+        setTimezone(parsed.timezone || "Australia/Melbourne");
+
+        // Clear saved data after restoring
+        localStorage.removeItem(FORM_DATA_KEY);
+      } catch (err) {
+        console.error("Failed to restore form data:", err);
+      }
+    }
+  }, []); // Run once on mount
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title || !location) {
       setError("Please fill in all required fields");
+      return;
+    }
+
+    // Check authentication ONLY when submitting
+    if (!isAuthenticated || !token) {
+      // Save form data before redirecting to login
+      const formData = { title, location, timezone };
+      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(formData));
+
+      // Redirect to login with return URL to this page
+      navigate("/login?redirect=/");
       return;
     }
 
