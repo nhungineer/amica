@@ -13,6 +13,7 @@ Backend
 - OpenAI for agent output
 - Vercel AI SDK & Zod schema for structured agent output
 - Google Places API for venue search
+- Resend for magic link & JWT for login session
 
 Frontend
 
@@ -27,8 +28,9 @@ Infrastructure
 
 ## Features
 
-[Current, as of 2025-10-13]
+[Current, as of 2025-10-14]
 
+- Basic authentication flow with magic link (Resend & JWT)
 - Create gathering with title, location name, timezone
 - Submit responses with preferences (timeslots, max budget, cuisine preferences, dietary restrictions)
 - Trigger multi-agent workflow where
@@ -41,7 +43,9 @@ Infrastructure
 
 Week 12 (13 - 19 Oct 2025)
 
-- Magic link authentication (Resend API)
+- Magic link authentication (Resend API) ✅
+- Add auth to SubmitResponse component
+- Fix auth flow: let guests fill out gathering form without login
 - Dynamic timeslot creation
 - Polish UX/UI for frontend
 - Error handling and recovery
