@@ -15,14 +15,15 @@ datasource db {
 // ============================================
 model User {
   id        String   @id @default(uuid())
-  email     String   @unique  // Email is the natural identifier
-  name      String              // Display name (can update)
+  email     String   @unique // Email is the natural identifier
+  name      String // Display name (can update)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relationships
-  organizedGatherings Gathering[] @relation("OrganizerRelation")
+  organizedGatherings Gathering[]  @relation("OrganizerRelation")
   responses           Response[]
+  loginTokens         LoginToken[] // ← ADD LOGIN TOKEN 
 
   @@map("users")
 }
@@ -34,12 +35,12 @@ model Gathering {
   id           String          @id @default(uuid())
   organizerId  String          @map("organizer_id")
   title        String
-  location     String          // E.g., "Brunswick, VIC, Australia"
-  timezone     String          // IANA timezone: "Australia/Melbourne"
-  timeOptions  Json            @map("time_options")  // Array of {start: ISO8601, end: ISO8601, label?: string}
+  location     String // E.g., "Brunswick, VIC, Australia"
+  timezone     String // IANA timezone: "Australia/Melbourne"
+  timeOptions  Json            @map("time_options") // Array of {start: ISO8601, end: ISO8601, label?: string}
   rsvpDeadline DateTime        @map("rsvp_deadline") // When to trigger agent if not all responded
   status       GatheringStatus @default(COLLECTING)
-  agentOutput  Json?           @map("agent_output")  // Nullable - only after agent runs
+  agentOutput  Json?           @map("agent_output") // Nullable - only after agent runs
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 
@@ -53,9 +54,9 @@ model Gathering {
 // Gathering lifecycle states
 enum GatheringStatus {
   COLLECTING // Waiting for responses
-  COMPLETED  // Agent ran successfully, recommendations ready
-  FAILED     // Agent encountered error
-  CANCELLED  // Organizer cancelled the gathering
+  COMPLETED // Agent ran successfully, recommendations ready
+  FAILED // Agent encountered error
+  CANCELLED // Organizer cancelled the gathering
 }
 
 // ============================================
@@ -80,4 +81,22 @@ model Response {
   // Constraints
   @@unique([gatheringId, userId], name: "one_response_per_user_per_gathering")
   @@map("responses")
+}
+
+// ============================================
+// LOGIN TOKEN - Magic Link Authentication
+// ============================================
+model LoginToken {
+  id        String    @id @default(uuid())
+  token     String    @unique // Random token for magic link
+  userId    String    @map("user_id") // User this token belongs to
+  email     String // Email address (for audit trail)
+  expiresAt DateTime  @map("expires_at") // Token expiry (15 minutes)
+  usedAt    DateTime? @map("used_at") // When token was used (null = unused)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_tokens")
 }

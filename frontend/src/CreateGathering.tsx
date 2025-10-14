@@ -1,14 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "./config";
+import { useAuth } from "./AuthContext";
+// Key for localStorage
+const FORM_DATA_KEY = "createGathering_formData";
 
 export function CreateGathering() {
   const navigate = useNavigate();
+  const { token, isAuthenticated } = useAuth();
+
+  // State for form fields
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [timezone, setTimezone] = useState("Australia/Melbourne");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Restore form data from localStorage on mount (after login redirect)
+  useEffect(() => {
+    const savedData = localStorage.getItem(FORM_DATA_KEY);
+
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setTitle(parsed.title || "");
+        setLocation(parsed.location || "");
+        setTimezone(parsed.timezone || "Australia/Melbourne");
+
+        // Clear saved data after restoring
+        localStorage.removeItem(FORM_DATA_KEY);
+      } catch (err) {
+        console.error("Failed to restore form data:", err);
+      }
+    }
+  }, []); // Run once on mount
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,13 +43,23 @@ export function CreateGathering() {
       return;
     }
 
+    // Check authentication ONLY when submitting
+    if (!isAuthenticated || !token) {
+      // Save form data before redirecting to login
+      const formData = { title, location, timezone };
+      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(formData));
+
+      // Redirect to login with return URL to this page
+      navigate("/login?redirect=/");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       // For now, hardcode some test data for time options
       const gatheringData = {
-        organizerId: "5648f6b3-f335-4c13-a09e-821ff8db6d8a", // Alice's ID
         title,
         location,
         timezone,
@@ -50,7 +85,10 @@ export function CreateGathering() {
 
       const response = await fetch(`${API_URL}/gatherings`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ← Add JWT!
+        },
         body: JSON.stringify(gatheringData),
       });
 

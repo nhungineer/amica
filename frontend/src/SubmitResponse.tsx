@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { API_URL } from "./config";
+import { useAuth, fetchWithAuth } from "./AuthContext";
 
 type TimeOption = {
   start: string;
@@ -13,15 +14,34 @@ export function SubmitResponse() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  // Get auth state and token
+  const { user, token, isAuthenticated } = useAuth();
+
   // State for time options (fetched from gathering)
   const [timeOptions, setTimeOptions] = useState<TimeOption[]>([]);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([]);
   const [budgetMax, setBudgetMax] = useState("");
   const [cuisinePreferences, setCuisinePreferences] = useState("");
   const [dietaryRestrictions, setDietaryRestrictions] = useState("");
-  const [selectedUser, setSelectedUser] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    // Don't redirect if we're already on the login page
+    // This prevents a redirect loop
+    const currentPath = window.location.pathname;
+
+    if (!isAuthenticated && user === null && token === null) {
+      // Only redirect if we're not already on the login page
+      if (
+        !currentPath.includes("/login") &&
+        !currentPath.includes("/auth/verify")
+      ) {
+        navigate(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      }
+    }
+  }, [isAuthenticated, user, token, navigate]);
 
   // Fetch gathering data to get time options
   useEffect(() => {
@@ -54,8 +74,17 @@ export function SubmitResponse() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedTimeSlots.length === 0 || !selectedUser) {
-      setError("Please select at least one time slot and choose a user");
+    if (selectedTimeSlots.length === 0) {
+      setError("Please select at least one time slot");
+      return;
+    }
+
+    // Double-check authentication before submitting
+    if (!token) {
+      setError("You must be logged in to submit a response");
+      navigate(
+        `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+      );
       return;
     }
 
@@ -65,7 +94,7 @@ export function SubmitResponse() {
     try {
       const responseData = {
         gatheringId: id,
-        userId: selectedUser,
+        // NO userId here! Backend will get it from token
         availableTimeSlotIndices: selectedTimeSlots,
         budgetMax: budgetMax ? parseInt(budgetMax) : null,
         cuisinePreferences: cuisinePreferences
@@ -74,9 +103,9 @@ export function SubmitResponse() {
         dietaryRestrictions: dietaryRestrictions || null,
       };
 
-      const response = await fetch(`${API_URL}/responses`, {
+      // Use fetchWithAuth to automatically include JWT token
+      const response = await fetchWithAuth("/responses", token, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(responseData),
       });
 
@@ -92,7 +121,6 @@ export function SubmitResponse() {
       setBudgetMax("");
       setCuisinePreferences("");
       setDietaryRestrictions("");
-      setSelectedUser("");
 
       // Navigate back to results page
       navigate(`/gathering/${id}`);
@@ -104,6 +132,11 @@ export function SubmitResponse() {
       setLoading(false);
     }
   };
+
+  // Show loading state while checking auth
+  if (!isAuthenticated) {
+    return <div>Checking authentication...</div>;
+  }
 
   return (
     <div
@@ -117,40 +150,16 @@ export function SubmitResponse() {
     >
       <h2>Submit Your Response</h2>
 
+      {/* Show who is logged in */}
+      <p style={{ marginBottom: "20px", color: "#666" }}>
+        Responding as: <strong>{user?.name || user?.email}</strong>
+      </p>
+
       <form
         onSubmit={handleSubmit}
         style={{ display: "flex", flexDirection: "column", gap: "20px" }}
       >
-        <div>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Responding as: *
-          </label>
-          <select
-            value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              fontSize: "14px",
-              borderRadius: "4px",
-              border: "1px solid #ddd",
-            }}
-            required
-          >
-            <option value="">-- Select User --</option>
-            <option value="9ca01e21-9725-4fed-a44c-0262c704c8a6">Bob</option>
-            <option value="7c932a32-2c6e-4f7b-96e8-f45efc77065d">
-              Charlie
-            </option>
-            <option value="5648f6b3-f335-4c13-a09e-821ff8db6d8a">Alice</option>
-          </select>
-        </div>
+        {/* REMOVED: User dropdown - we know who they are from auth! */}
 
         <div>
           <label
@@ -259,7 +268,7 @@ export function SubmitResponse() {
           />
         </div>
 
-        {error && <p style={{ color: "red" }}>❌ {error}</p>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
 
         <button
           type="submit"

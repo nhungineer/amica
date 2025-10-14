@@ -11,6 +11,7 @@ import dotenv from 'dotenv';
   import userRoutes from './routes/users';
   import gatheringRoutes from './routes/gatherings';
   import responseRoutes from './routes/responses';
+  import authRoutes from './routes/auth';
 
 // Import agent trigger route for testing
   import agentTriggerRoutes from './routes/agent-trigger';
@@ -42,7 +43,9 @@ app.use('/users', userRoutes);
 app.use('/gatherings', gatheringRoutes);
 // Make any requests to /responses/* handled by responsesRoutes router
 app.use('/responses', responseRoutes);
-// Redirect requests to /agent-trigger/* to be handled by agentTriggerRoutes 
+// Make any requests to /auth/* handled by authRoutes router
+app.use('/auth', authRoutes);
+// Redirect requests to /agent-trigger/* to be handled by agentTriggerRoutes
   app.use('/agent-trigger', agentTriggerRoutes);
 
 
