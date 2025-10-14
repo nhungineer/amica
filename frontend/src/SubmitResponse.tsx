@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { API_URL } from "./config";
 import { useAuth, fetchWithAuth } from "./AuthContext";
+import { colors, commonStyles, buttonHoverEffect } from "./styles";
 
 type TimeOption = {
   start: string;
@@ -10,14 +11,10 @@ type TimeOption = {
 };
 
 export function SubmitResponse() {
-  // Get gathering ID from URL parameter
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
-  // Get auth state and token
   const { user, token, isAuthenticated } = useAuth();
 
-  // State for time options (fetched from gathering)
   const [timeOptions, setTimeOptions] = useState<TimeOption[]>([]);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([]);
   const [budgetMax, setBudgetMax] = useState("");
@@ -28,12 +25,9 @@ export function SubmitResponse() {
 
   // Check authentication on component mount
   useEffect(() => {
-    // Don't redirect if we're already on the login page
-    // This prevents a redirect loop
     const currentPath = window.location.pathname;
 
     if (!isAuthenticated && user === null && token === null) {
-      // Only redirect if we're not already on the login page
       if (
         !currentPath.includes("/login") &&
         !currentPath.includes("/auth/verify")
@@ -63,10 +57,8 @@ export function SubmitResponse() {
 
   const handleTimeSlotToggle = (index: number) => {
     if (selectedTimeSlots.includes(index)) {
-      // Remove if already selected
       setSelectedTimeSlots(selectedTimeSlots.filter((i) => i !== index));
     } else {
-      // Add if not selected
       setSelectedTimeSlots([...selectedTimeSlots, index]);
     }
   };
@@ -79,9 +71,9 @@ export function SubmitResponse() {
       return;
     }
 
-    // Double-check authentication before submitting
     if (!token) {
       setError("You must be logged in to submit a response");
+
       navigate(
         `/login?redirect=${encodeURIComponent(window.location.pathname)}`
       );
@@ -94,7 +86,6 @@ export function SubmitResponse() {
     try {
       const responseData = {
         gatheringId: id,
-        // NO userId here! Backend will get it from token
         availableTimeSlotIndices: selectedTimeSlots,
         budgetMax: budgetMax ? parseInt(budgetMax) : null,
         cuisinePreferences: cuisinePreferences
@@ -103,7 +94,6 @@ export function SubmitResponse() {
         dietaryRestrictions: dietaryRestrictions || null,
       };
 
-      // Use fetchWithAuth to automatically include JWT token
       const response = await fetchWithAuth("/responses", token, {
         method: "POST",
         body: JSON.stringify(responseData),
@@ -135,158 +125,161 @@ export function SubmitResponse() {
 
   // Show loading state while checking auth
   if (!isAuthenticated) {
-    return <div>Checking authentication...</div>;
+    return (
+      <div style={commonStyles.pageContainer}>
+        <div style={{ ...commonStyles.card, textAlign: "center" }}>
+          <p style={{ color: colors.textLight }}>Checking authentication...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div
-      style={{
-        maxWidth: "600px",
-        margin: "20px auto",
-        padding: "20px",
-        backgroundColor: "#f9f9f9",
-        borderRadius: "8px",
-      }}
-    >
-      <h2>Submit Your Response</h2>
+    <div style={commonStyles.pageContainer}>
+      <div style={commonStyles.card}>
+        <h1 style={commonStyles.heading}>Submit Your Response</h1>
 
-      {/* Show who is logged in */}
-      <p style={{ marginBottom: "20px", color: "#666" }}>
-        Responding as: <strong>{user?.name || user?.email}</strong>
-      </p>
-
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: "20px" }}
-      >
-        {/* REMOVED: User dropdown - we know who they are from auth! */}
-
-        <div>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "10px",
-              fontWeight: "bold",
-            }}
-          >
-            When are you available? * (Select all that work)
-          </label>
-          {timeOptions.map((option, index) => (
-            <div key={index} style={{ marginBottom: "8px" }}>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedTimeSlots.includes(index)}
-                  onChange={() => handleTimeSlotToggle(index)}
-                  style={{ width: "18px", height: "18px" }}
-                />
-                <span>{option.label}</span>
-              </label>
-            </div>
-          ))}
-        </div>
-
-        <div>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Budget Max ($ per person)
-          </label>
-          <input
-            type="number"
-            value={budgetMax}
-            onChange={(e) => setBudgetMax(e.target.value)}
-            placeholder="e.g., 30"
-            style={{
-              width: "100%",
-              padding: "10px",
-              fontSize: "14px",
-              borderRadius: "4px",
-              border: "1px solid #ddd",
-            }}
-          />
-        </div>
-
-        <div>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Cuisine Preferences (comma separated)
-          </label>
-          <input
-            type="text"
-            value={cuisinePreferences}
-            onChange={(e) => setCuisinePreferences(e.target.value)}
-            placeholder="e.g., Italian, Japanese, Thai"
-            style={{
-              width: "100%",
-              padding: "10px",
-              fontSize: "14px",
-              borderRadius: "4px",
-              border: "1px solid #ddd",
-            }}
-          />
-        </div>
-
-        <div>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Dietary Restrictions
-          </label>
-          <input
-            type="text"
-            value={dietaryRestrictions}
-            onChange={(e) => setDietaryRestrictions(e.target.value)}
-            placeholder="e.g., vegetarian, gluten-free"
-            style={{
-              width: "100%",
-              padding: "10px",
-              fontSize: "14px",
-              borderRadius: "4px",
-              border: "1px solid #ddd",
-            }}
-          />
-        </div>
-
-        {error && <p style={{ color: "red" }}>{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
+        {/* Show who is logged in */}
+        <div
           style={{
-            padding: "12px 24px",
-            backgroundColor: loading ? "#ccc" : "#2196F3",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            fontSize: "16px",
-            cursor: loading ? "not-allowed" : "pointer",
-            fontWeight: "bold",
+            backgroundColor: colors.background,
+            padding: "12px 16px",
+            borderRadius: "8px",
+            marginBottom: "24px",
+            border: `2px solid ${colors.border}`,
           }}
         >
-          {loading ? "Submitting..." : "Submit Response"}
-        </button>
-      </form>
+          <p style={{ margin: 0, color: colors.textLight, fontSize: "14px" }}>
+            Responding as:{" "}
+            <strong style={{ color: colors.text }}>
+              {user?.name || user?.email}
+            </strong>
+          </p>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+        >
+          {/* Time Slots Selection */}
+          <div>
+            <label style={{ ...commonStyles.label, fontSize: "16px" }}>
+              When are you available? * (Select all that work)
+            </label>
+            <div
+              style={{
+                backgroundColor: colors.background,
+                padding: "16px",
+                borderRadius: "8px",
+                border: `2px solid ${colors.border}`,
+              }}
+            >
+              {timeOptions.map((option, index) => (
+                <label
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "10px",
+                    marginBottom: "8px",
+                    cursor: "pointer",
+                    borderRadius: "6px",
+                    backgroundColor: selectedTimeSlots.includes(index)
+                      ? "#e0f2fe"
+                      : "transparent",
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selectedTimeSlots.includes(index)) {
+                      e.currentTarget.style.backgroundColor = "#f1f5f9";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!selectedTimeSlots.includes(index)) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTimeSlots.includes(index)}
+                    onChange={() => handleTimeSlotToggle(index)}
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      cursor: "pointer",
+                      accentColor: colors.primary,
+                    }}
+                  />
+                  <span style={{ fontSize: "15px", color: colors.text }}>
+                    {option.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Budget Max */}
+          <div>
+            <label style={commonStyles.label}>Budget Max ($ per person)</label>
+            <input
+              type="number"
+              value={budgetMax}
+              onChange={(e) => setBudgetMax(e.target.value)}
+              placeholder="e.g., 30"
+              style={commonStyles.input}
+            />
+          </div>
+
+          {/* Cuisine Preferences */}
+          <div>
+            <label style={commonStyles.label}>
+              Cuisine Preferences (comma separated)
+            </label>
+            <input
+              type="text"
+              value={cuisinePreferences}
+              onChange={(e) => setCuisinePreferences(e.target.value)}
+              placeholder="e.g., Italian, Japanese, Thai"
+              style={commonStyles.input}
+            />
+          </div>
+
+          {/* Dietary Restrictions */}
+          <div>
+            <label style={commonStyles.label}>Dietary Restrictions</label>
+            <input
+              type="text"
+              value={dietaryRestrictions}
+              onChange={(e) => setDietaryRestrictions(e.target.value)}
+              placeholder="e.g., vegetarian, gluten-free"
+              style={commonStyles.input}
+            />
+          </div>
+
+          {/* Error Message */}
+          {error && <div style={commonStyles.errorBox}>⚠️ {error}</div>}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              ...commonStyles.buttonPrimary,
+              width: "100%",
+              padding: "16px",
+              fontSize: "16px",
+              cursor: loading ? "not-allowed" : "pointer",
+              backgroundColor: loading ? colors.border : colors.success,
+            }}
+            onMouseEnter={loading ? undefined : buttonHoverEffect.success.enter}
+            onMouseLeave={loading ? undefined : buttonHoverEffect.success.leave}
+          >
+            {loading ? "Submitting..." : "Submit Response"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

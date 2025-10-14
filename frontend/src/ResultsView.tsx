@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./ResultsView.css";
 import { API_URL } from "./config";
+import { colors, commonStyles } from "./styles";
 
 // TypeScript types (duplicated from App.tsx for now)
 type TimeOption = {
@@ -55,6 +56,7 @@ type Gathering = {
   status: string;
   timeOptions: TimeOption[];
   responses: Response[];
+  rsvpDeadline: string;
   agentOutput: {
     preferenceAnalysis: PreferenceAnalysis;
     venueRecommendation: {
@@ -94,7 +96,7 @@ export function ResultsView() {
     if (id) {
       fetchGathering(id);
     }
-  }, [id]);  // Re-run if ID in URL changes
+  }, [id]); // Re-run if ID in URL changes
 
   // Function to trigger AI agents
   const handleAgentTrigger = async () => {
@@ -105,12 +107,9 @@ export function ResultsView() {
     try {
       console.log("Triggering agent for gathering:", gathering.id);
 
-      const response = await fetch(
-        `${API_URL}/agent-trigger/${gathering.id}`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetch(`${API_URL}/agent-trigger/${gathering.id}`, {
+        method: "POST",
+      });
 
       if (!response.ok) {
         throw new Error("Failed to trigger agent");
@@ -141,14 +140,10 @@ export function ResultsView() {
       <div style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
         <button
           onClick={() => navigate(`/gathering/${gathering.id}/respond`)}
+          className="btn-primary"
           style={{
-            padding: "10px 20px",
-            backgroundColor: "#2196F3",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontWeight: "bold",
+            ...commonStyles.buttonPrimary,
+            backgroundColor: colors.primary,
           }}
         >
           📝 Submit Response
@@ -156,15 +151,8 @@ export function ResultsView() {
 
         <button
           onClick={() => fetchGathering(gathering.id)}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontWeight: "bold",
-          }}
+          className="btn-secondary"
+          style={commonStyles.buttonSecondary}
         >
           🔄 Refresh
         </button>
@@ -174,19 +162,107 @@ export function ResultsView() {
           <button
             onClick={handleAgentTrigger}
             disabled={agentLoading}
+            className="btn-success"
             style={{
-              padding: "10px 20px",
-              backgroundColor: agentLoading ? "#ccc" : "#FF9800",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
+              ...commonStyles.buttonPrimary,
+              backgroundColor: agentLoading ? colors.border : colors.success,
               cursor: agentLoading ? "not-allowed" : "pointer",
-              fontWeight: "bold",
+              opacity: agentLoading ? 0.6 : 1,
             }}
           >
             {agentLoading ? "🤖 Running Agent..." : "🤖 Trigger Agent"}
           </button>
         )}
+      </div>
+      {/* Available Time Slots Section - NEW! */}
+      <div
+        style={{
+          padding: "24px",
+          backgroundColor: colors.white,
+          borderRadius: "12px",
+          marginBottom: "20px",
+          border: `1px solid ${colors.border}`,
+          boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "15px",
+          }}
+        >
+          <h3 style={{ margin: 0 }}>⏰ Available Time Slots</h3>
+          <div
+            style={{
+              backgroundColor: "#fef3c7",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: `2px solid ${colors.warning}`,
+            }}
+          >
+            <span
+              style={{ fontSize: "13px", color: "#92400e", fontWeight: "600" }}
+            >
+              ⏳ RSVP by:{" "}
+              {new Date(gathering.rsvpDeadline).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
+        </div>
+        <p
+          style={{
+            fontSize: "14px",
+            color: colors.textLight,
+            marginBottom: "15px",
+            marginTop: "12px",
+          }}
+        >
+          Choose which times work for you when submitting your response:
+        </p>
+        {/* Individual Time slot card */}
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {gathering.timeOptions.map((option, index) => (
+            <div
+              key={index}
+              style={{
+                padding: "12px 18px",
+                backgroundColor: colors.background,
+                border: `2px solid ${colors.border}`,
+                borderRadius: "8px",
+                fontSize: "14px",
+                transition: "all 0.2s",
+              }}
+            >
+              <strong style={{ color: colors.text }}>{option.label}</strong>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: colors.textLight,
+                  marginTop: "4px",
+                }}
+              >
+                {new Date(option.start).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}{" "}
+                -{" "}
+                {new Date(option.end).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Waiting for responses message */}
@@ -195,19 +271,22 @@ export function ResultsView() {
           style={{
             padding: "40px",
             textAlign: "center",
-            color: "#666",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
+            color: colors.textLight,
+            backgroundColor: colors.background,
+            borderRadius: "12px",
             marginBottom: "20px",
+            border: `1px solid ${colors.border}`,
           }}
         >
-          <h3>👥 Waiting for Responses</h3>
-          <p>
+          <h3 style={{ color: colors.text, marginTop: 0 }}>
+            👥 Waiting for Responses
+          </h3>
+          <p style={{ color: colors.textLight, marginBottom: "12px" }}>
             Click "Submit Response" above to add responses from Bob, Charlie, or
             Alice!
           </p>
-          <p>
-            <small>
+          <p style={{ marginBottom: 0 }}>
+            <small style={{ color: colors.textLight }}>
               Once you have responses, you can trigger the agent to get venue
               recommendations.
             </small>
@@ -223,7 +302,7 @@ export function ResultsView() {
             <p>🍽️ {gathering.title}</p>
             <p>📍 {gathering.location}</p>
             <p>
-              📅{" "}
+              📅
               {
                 gathering.agentOutput?.preferenceAnalysis.recommendedTimeSlot
                   .label
@@ -282,7 +361,7 @@ export function ResultsView() {
               </div>
 
               <div>
-                <h4>Budget Range</h4>
+                <h4>Budget</h4>
                 <p>
                   ${gathering.agentOutput?.preferenceAnalysis.budgetRange.min}-$
                   {gathering.agentOutput?.preferenceAnalysis.budgetRange.max}
