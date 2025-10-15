@@ -36,6 +36,7 @@ model Gathering {
   organizerId  String          @map("organizer_id")
   title        String
   location     String // E.g., "Brunswick, VIC, Australia"
+  venueType    VenueType       @default(RESTAURANT) @map("venue_type") // Type of venue to search for
   timezone     String // IANA timezone: "Australia/Melbourne"
   timeOptions  Json            @map("time_options") // Array of {start: ISO8601, end: ISO8601, label?: string}
   rsvpDeadline DateTime        @map("rsvp_deadline") // When to trigger agent if not all responded
@@ -99,4 +100,14 @@ model LoginToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("login_tokens")
+}
+
+// ============================================
+// VENUE TYPE - Gathering Category (enum names written in PascalCase)
+// ============================================
+enum VenueType {
+  RESTAURANT
+  CAFE
+  BAR
+  PARK
 }
