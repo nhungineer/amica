@@ -29,7 +29,7 @@ export const commonStyles = {
 
   // Card container
   card: {
-    maxWidth: "700px",
+    maxWidth: "600px",
     margin: "40px auto",
     padding: "32px",
     backgroundColor: colors.white,
