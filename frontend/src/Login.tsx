@@ -6,6 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export function Login() {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState(""); // Add name to login form
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -23,6 +24,7 @@ export function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
+          name,
           redirectTo,
         }),
       });
@@ -128,6 +130,21 @@ export function Login() {
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: "20px" }}
         >
+          <div>
+            <label style={commonStyles.label}>Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              required
+              style={commonStyles.input}
+            />
+            <p style={commonStyles.helperText}>
+              How you'll appear to others in gatherings
+            </p>
+          </div>
+
           <div>
             <label style={commonStyles.label}>Email Address</label>
             <input
