@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyToken, JwtPayload } from '../utils/jwt';
+import { Request, Response, NextFunction } from "express";
+import { verifyToken, JwtPayload } from "../utils/jwt";
 
 // Extend Express Request type to include user
 declare global {
@@ -20,17 +20,19 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      return res.status(401).json({ error: 'No authorization header' });
+      return res.status(401).json({ error: "No authorization header" });
     }
 
     // Expected format: "Bearer <token>"
-    const parts = authHeader.split(' ');
+    const parts = authHeader.split(" ");
 
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      return res.status(401).json({ error: 'Invalid authorization header format' });
+    if (parts.length !== 2 || parts[0] !== "Bearer") {
+      return res
+        .status(401)
+        .json({ error: "Invalid authorization header format" });
     }
 
-    const token = parts[1];
+    const token = parts[1]!; // Non-null assertion - we know it exists
 
     // Verify JWT and extract payload
     const payload = verifyToken(token);
@@ -44,6 +46,6 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     if (error instanceof Error) {
       return res.status(401).json({ error: error.message });
     }
-    return res.status(401).json({ error: 'Authentication failed' });
+    return res.status(401).json({ error: "Authentication failed" });
   }
 }
