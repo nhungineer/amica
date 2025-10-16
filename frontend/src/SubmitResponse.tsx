@@ -3,6 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { API_URL } from "./config";
 import { useAuth, fetchWithAuth } from "./AuthContext";
 import { colors, commonStyles, buttonHoverEffect } from "./styles";
+import {
+  CUISINE_OPTIONS,
+  DIETARY_RESTRICTIONS,
+  combineDietaryInfo,
+} from "./formOptions";
 
 type TimeOption = {
   start: string;
@@ -18,8 +23,9 @@ export function SubmitResponse() {
   const [timeOptions, setTimeOptions] = useState<TimeOption[]>([]);
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([]);
   const [budgetMax, setBudgetMax] = useState("");
-  const [cuisinePreferences, setCuisinePreferences] = useState("");
-  const [dietaryRestrictions, setDietaryRestrictions] = useState("");
+  const [cuisinePreferences, setCuisinePreferences] = useState<string[]>([]);
+  const [dietaryCheckboxes, setDietaryCheckboxes] = useState<string[]>([]);
+  const [dietaryNotes, setDietaryNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +68,26 @@ export function SubmitResponse() {
       setSelectedTimeSlots([...selectedTimeSlots, index]);
     }
   };
+  // Toggle cuisine checkbox
+  const handleCuisineToggle = (cuisine: string) => {
+    if (cuisinePreferences.includes(cuisine)) {
+      // Already selected → remove it
+      setCuisinePreferences(cuisinePreferences.filter((c) => c !== cuisine));
+    } else {
+      // Not selected → add it
+
+      setCuisinePreferences([...cuisinePreferences, cuisine]);
+    }
+  };
+
+  // Toggle dietary checkbox
+  const handleDietaryToggle = (restriction: string) => {
+    if (dietaryCheckboxes.includes(restriction)) {
+      setDietaryCheckboxes(dietaryCheckboxes.filter((r) => r !== restriction));
+    } else {
+      setDietaryCheckboxes([...dietaryCheckboxes, restriction]);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,10 +114,11 @@ export function SubmitResponse() {
         gatheringId: id,
         availableTimeSlotIndices: selectedTimeSlots,
         budgetMax: budgetMax ? parseInt(budgetMax) : null,
-        cuisinePreferences: cuisinePreferences
-          ? cuisinePreferences.split(",").map((c) => c.trim())
-          : [],
-        dietaryRestrictions: dietaryRestrictions || null,
+        cuisinePreferences: cuisinePreferences, // ← Already an array!
+        dietaryRestrictions: combineDietaryInfo(
+          dietaryCheckboxes,
+          dietaryNotes
+        ), // ← Use helper
       };
 
       const response = await fetchWithAuth("/responses", token, {
@@ -109,8 +136,9 @@ export function SubmitResponse() {
       // Reset form
       setSelectedTimeSlots([]);
       setBudgetMax("");
-      setCuisinePreferences("");
-      setDietaryRestrictions("");
+      setCuisinePreferences([]); // ← Reset to empty array
+      setDietaryCheckboxes([]); // ← Add this
+      setDietaryNotes(""); // ← Add this
 
       // Navigate back to results page
       navigate(`/gathering/${id}`);
@@ -234,26 +262,141 @@ export function SubmitResponse() {
 
           {/* Cuisine Preferences */}
           <div>
-            <label style={commonStyles.label}>
-              Cuisine Preferences (comma separated)
+            <label style={{ ...commonStyles.label, fontSize: "16px" }}>
+              Cuisine Preferences (Select all you like)
             </label>
-            <input
-              type="text"
-              value={cuisinePreferences}
-              onChange={(e) => setCuisinePreferences(e.target.value)}
-              placeholder="e.g., Italian, Japanese, Thai"
-              style={commonStyles.input}
-            />
+            <div
+              style={{
+                backgroundColor: colors.background,
+                padding: "16px",
+                borderRadius: "8px",
+                border: `2px solid ${colors.border}`,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                gap: "10px",
+              }}
+            >
+              {CUISINE_OPTIONS.map((cuisine) => (
+                <label
+                  key={cuisine}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px",
+                    cursor: "pointer",
+                    borderRadius: "6px",
+                    backgroundColor: cuisinePreferences.includes(cuisine)
+                      ? "#e0f2fe"
+                      : "transparent",
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!cuisinePreferences.includes(cuisine)) {
+                      e.currentTarget.style.backgroundColor = "#f1f5f9";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!cuisinePreferences.includes(cuisine)) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={cuisinePreferences.includes(cuisine)}
+                    onChange={() => handleCuisineToggle(cuisine)}
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      cursor: "pointer",
+                      accentColor: colors.primary,
+                    }}
+                  />
+                  <span style={{ fontSize: "14px", color: colors.text }}>
+                    {cuisine}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Dietary Restrictions */}
           <div>
-            <label style={commonStyles.label}>Dietary Restrictions</label>
+            <label style={{ ...commonStyles.label, fontSize: "16px" }}>
+              Dietary Restrictions
+            </label>
+            <div
+              style={{
+                backgroundColor: colors.background,
+                padding: "16px",
+                borderRadius: "8px",
+                border: `2px solid ${colors.border}`,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+                gap: "10px",
+                marginBottom: "12px",
+              }}
+            >
+              {DIETARY_RESTRICTIONS.map((restriction) => (
+                <label
+                  key={restriction}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "8px",
+                    cursor: "pointer",
+                    borderRadius: "6px",
+                    backgroundColor: dietaryCheckboxes.includes(restriction)
+                      ? "#fef3c7"
+                      : "transparent",
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!dietaryCheckboxes.includes(restriction)) {
+                      e.currentTarget.style.backgroundColor = "#f1f5f9";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!dietaryCheckboxes.includes(restriction)) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={dietaryCheckboxes.includes(restriction)}
+                    onChange={() => handleDietaryToggle(restriction)}
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      cursor: "pointer",
+                      accentColor: colors.warning,
+                    }}
+                  />
+                  <span style={{ fontSize: "14px", color: colors.text }}>
+                    {restriction}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {/* Additional dietary notes text field */}
+            <label
+              style={{
+                ...commonStyles.label,
+                fontSize: "14px",
+                marginTop: "8px",
+              }}
+            >
+              Additional dietary notes (optional)
+            </label>
             <input
               type="text"
-              value={dietaryRestrictions}
-              onChange={(e) => setDietaryRestrictions(e.target.value)}
-              placeholder="e.g., vegetarian, gluten-free"
+              value={dietaryNotes}
+              onChange={(e) => setDietaryNotes(e.target.value)}
+              placeholder="e.g., severe peanut allergy,lactose intolerant"
               style={commonStyles.input}
             />
           </div>

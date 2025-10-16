@@ -22,6 +22,7 @@ export function CreateGathering() {
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
   const [timezone, setTimezone] = useState("Australia/Melbourne");
+  const [venueType, setVenueType] = useState("RESTAURANT"); // ← add venue type
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duration, setDuration] = useState(2);
@@ -48,6 +49,7 @@ export function CreateGathering() {
         const parsed = JSON.parse(savedData);
         setTitle(parsed.title || "");
         setLocation(parsed.location || "");
+        setVenueType(parsed.venueType || "RESTAURANT");
         setTimezone(parsed.timezone || "Australia/Melbourne");
 
         if (parsed.timeSlots && parsed.timeSlots.length > 0) {
@@ -167,7 +169,14 @@ export function CreateGathering() {
     }
 
     if (!isAuthenticated || !token) {
-      const formData = { title, location, timezone, timeSlots, duration };
+      const formData = {
+        title,
+        location,
+        timezone,
+        venueType,
+        timeSlots,
+        duration,
+      };
       localStorage.setItem(FORM_DATA_KEY, JSON.stringify(formData));
       navigate("/login?redirect=/");
       return;
@@ -180,6 +189,7 @@ export function CreateGathering() {
       const gatheringData = {
         title,
         location,
+        venueType,
         timezone,
         timeOptions: formatTimeSlotsForBackend(),
         rsvpDeadline: calculateRsvpDeadline(),
@@ -249,6 +259,26 @@ export function CreateGathering() {
               required
             />
           </div>
+
+          {/* Venue Type Field - ADD THIS WHOLE BLOCK */}
+          <div>
+            <label style={commonStyles.label}>Venue Type *</label>
+            <select
+              value={venueType}
+              onChange={(e) => setVenueType(e.target.value)}
+              style={commonStyles.input}
+            >
+              <option value="RESTAURANT">Restaurant</option>
+              <option value="CAFE">Cafe</option>
+              <option value="BAR">Bar</option>
+              <option value="PARK">Park</option>
+            </select>
+            <p style={commonStyles.helperText}>
+              What type of venue are you looking for?
+            </p>
+          </div>
+
+          {/* Timezone Field */}
 
           {/* Timezone Field */}
           <div>

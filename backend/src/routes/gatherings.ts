@@ -1,6 +1,7 @@
 // Import Router and Prisma client
 import { Router } from "express";
 import { prisma } from "../db";
+import { VenueType } from "@prisma/client";
 import { requireAuth } from "../middleware/auth";
 // Create router instance
 const router = Router();
@@ -12,13 +13,17 @@ const router = Router();
 // new Date(rsvpDeadline) converts string to javaScript date object
 router.post("/", requireAuth, async (req, res) => {
   try {
-    const {
-      title,
-      location,
-      timezone,
-      timeOptions,
-      rsvpDeadline,
-    } = req.body;
+    const { title, location, timezone, timeOptions, rsvpDeadline, venueType } =
+      req.body;
+    // Validate venueType if provided
+    const validVenueTypes = Object.values(VenueType);
+    if (venueType && !validVenueTypes.includes(venueType)) {
+      return res.status(400).json({
+        error: `Invalid venue type. Must be one of: ${validVenueTypes.join(
+          ", "
+        )}`,
+      });
+    }
 
     // Get organizerId from authenticated user
     const organizerId = req.user!.userId;
@@ -28,6 +33,7 @@ router.post("/", requireAuth, async (req, res) => {
         organizerId,
         title,
         location,
+        venueType: venueType || VenueType.RESTAURANT, // use provided value or default
         timezone,
         timeOptions,
         rsvpDeadline: new Date(rsvpDeadline),

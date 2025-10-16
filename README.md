@@ -28,12 +28,12 @@ Infrastructure
 
 ## Features
 
-[Current, as of 2025-10-14]
+[Current, as of 2025-10-16]
 
 - Basic authentication flow with magic link (Resend & JWT)
-- Create gathering with title, location name, timezone
-- Submit responses with preferences (timeslots, max budget, cuisine preferences, dietary restrictions)
-- Trigger multi-agent workflow where
+- Create gathering with title, location name, timezone selection, duration
+- Submit responses with preferences: timeslots, max budget, cuisine preferences, dietary restrictions (cuisine and dietary as multi-select options, not free text)
+- Trigger multi-agent workflow:
 
 1. Preference agent analyse group preferences to find the best timeslot, budget range and cuisine/dietary preferences for the group
 2. Venue agent calls Google Places API to search for venue based on the preference analysis, and select the top 3 venues for recommendations
@@ -44,10 +44,11 @@ Infrastructure
 Week 12 (13 - 19 Oct 2025)
 
 - Magic link authentication (Resend API) ✅
-- Add auth to SubmitResponse component
-- Fix auth flow: let guests fill out gathering form without login
-- Dynamic timeslot creation
-- Polish UX/UI for frontend
+- Add auth to SubmitResponse component ✅
+- Fix auth flow: let guests fill out gathering form without login ✅
+- Dynamic timeslot creation ✅
+- Polish UX/UI for frontend ✅
+- Replace free text in cuisine and dietary selection with structured data ✅
 - Error handling and recovery
 - Enhanced agent logic
 - Dashboard view for organisers
