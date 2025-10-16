@@ -54,7 +54,8 @@ export async function runAgentWorkflow(gatheringId: string) {
     const venueRecommendation = await recommendVenues(
       preferenceAnalysis,
       gathering.location,
-      gathering.venueType // Pass venueType from gathering
+      gathering.venueType, // Pass venueType from gathering
+      gathering.responses // Pass responses for richer context
     );
 
     console.log(`✅ Venue recommendations complete`);

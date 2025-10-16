@@ -5,7 +5,8 @@ import axios from "axios";
  */
 interface PlaceResult {
   name: string;
-  vicinity: string; // Address
+  formatted_address: string; // Replace vicinity in nearby search with formatted_address in text search
+  vicinity?: string;
   rating?: number;
   price_level?: number; // 1-4 scale
   types: string[];
@@ -27,6 +28,7 @@ export interface VenueData {
   priceLevel: number;
   cuisine: string;
   placeId: string;
+  googleUrl: string; // Add direct link to Google Maps
 }
 
 /**
@@ -34,14 +36,15 @@ export interface VenueData {
  *
  * @param query - Search query (e.g., "Italian restaurant")
  * @param location - Location string (e.g., "Brunswick, VIC, Australia")
- * @param radius - Search radius in meters (default: 5000m = 5km)
+ * @param venueType - Venue type for filtering
+ * @param dietaryRestrictions - Array of dietary needs to include in search
  * @returns Array of formatted venue data
- */
+ **/
 export async function searchVenues(
   query: string,
   location: string,
   venueType: string, // Dynamic venue type for Google Places API
-  radius: number = 5000
+  dietaryRestrictions: string[] = [] // Add dietary restrictions to query
 ): Promise<VenueData[]> {
   try {
     const apiKey = process.env.GOOGLE_PLACES_API_KEY;
@@ -51,59 +54,64 @@ export async function searchVenues(
         "GOOGLE_PLACES_API_KEY not found in environment variables"
       );
     }
+    // NEW: Build a richer search query
+    let searchQuery = `${query} ${venueType} in ${location}`;
 
-    // Step 1: Geocode the location (convert address to lat/lng)
-    const geocodeUrl = "https://maps.googleapis.com/maps/api/geocode/json";
-    const geocodeResponse = await axios.get<{
-      results: Array<{ geometry: { location: { lat: number; lng: number } } }>;
-    }>(geocodeUrl, {
-      params: {
-        address: location,
-        key: apiKey,
-      },
-    });
-
-    if (
-      !geocodeResponse.data.results ||
-      geocodeResponse.data.results.length === 0
-    ) {
-      throw new Error(`Could not find location: ${location}`);
+    // Add dietary restrictions to search for better matches
+    if (dietaryRestrictions.length > 0) {
+      const dietaryKeywords = dietaryRestrictions.join(" ");
+      searchQuery += ` ${dietaryKeywords}`;
     }
 
-    const firstResult = geocodeResponse.data.results[0];
-    if (!firstResult) {
-      throw new Error(`Could not find location: ${location}`);
-    }
-    const { lat, lng } = firstResult.geometry.location;
+    console.log(`🔍 Searching Google Places: "${searchQuery}"`);
 
-    // Step 2: Search for places near that location
+    // CHANGED: Use Text Search API instead of Nearby Search
     const placesUrl =
-      "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
+      "https://maps.googleapis.com/maps/api/place/textsearch/json";
     const placesResponse = await axios.get<GooglePlacesResponse>(placesUrl, {
       params: {
-        location: `${lat},${lng}`,
-        radius,
-        keyword: query,
+        query: searchQuery, // Natural language query
         type: venueType.toLowerCase(),
         key: apiKey,
       },
     });
 
-    if (placesResponse.data.status !== "OK") {
+    if (
+      placesResponse.data.status !== "OK" &&
+      placesResponse.data.status !== "ZERO_RESULTS"
+    ) {
       throw new Error(`Google Places API error: ${placesResponse.data.status}`);
+    }
+
+    if (placesResponse.data.status === "ZERO_RESULTS") {
+      console.log("⚠️ No results found, trying fallback search...");
+      // Fallback to simpler query
+      const fallbackResponse = await axios.get<GooglePlacesResponse>(
+        placesUrl,
+        {
+          params: {
+            query: `${venueType} in ${location}`,
+            key: apiKey,
+          },
+        }
+      );
+      placesResponse.data = fallbackResponse.data;
     }
 
     // Step 3: Format the results
     const venues: VenueData[] = placesResponse.data.results
-      .slice(0, 10)
+      .slice(0, 20) // Increase the pool to 20 instead of 10
       .map((place) => ({
         name: place.name,
-        address: place.vicinity,
+        address:
+          place.formatted_address || place.vicinity || "Address not available",
         rating: place.rating || 0,
         priceLevel: place.price_level || 2, // Default to moderate pricing
         cuisine: extractCuisineFromTypes(place.types),
         placeId: place.place_id,
+        googleUrl: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`, // NEW
       }));
+    console.log(`✅ Found ${venues.length} venues`); // NEW: Add this log
 
     return venues;
   } catch (error) {
