@@ -47,6 +47,8 @@ type VenueRecommendation = {
   priceLevel: number;
   cuisine: string;
   reason: string;
+  placeId: string;
+  googleUrl: string;
 };
 
 type Gathering = {
@@ -377,14 +379,13 @@ export function ResultsView() {
               <div>
                 <h4>Preferences</h4>
                 <p>
-                  {gathering.agentOutput?.preferenceAnalysis.cuisinePreferences.join(
-                    ", "
-                  )}
+                  {gathering.agentOutput?.preferenceAnalysis
+                    .cuisinePreferences[0] || "No preference"}
                 </p>
                 <small>
                   {gathering.agentOutput?.preferenceAnalysis.dietaryRestrictions.join(
                     ", "
-                  )}
+                  ) || "No restrictions"}
                 </small>
               </div>
             </div>
@@ -398,15 +399,26 @@ export function ResultsView() {
             <div className="venue-grid">
               {gathering.agentOutput?.venueRecommendation.recommendations.map(
                 (venue) => (
-                  <div key={venue.name} className="venue-card">
-                    <h3>{venue.name}</h3>
+                  <a
+                    key={venue.name}
+                    href={venue.googleUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="venue-card"
+                    style={{
+                      textDecoration: "none",
+                      color: "inherit",
+                      display: "block",
+                    }}
+                  >
+                    <h3 style={{ color: colors.primary }}>{venue.name}</h3>
                     <p className="venue-address">{venue.address}</p>
                     <div className="venue-stats">
                       <span>⭐ {venue.rating}</span>
                       <span>{"$".repeat(venue.priceLevel)}</span>
                     </div>
                     <p className="venue-reason">{venue.reason}</p>
-                  </div>
+                  </a>
                 )
               )}
             </div>
