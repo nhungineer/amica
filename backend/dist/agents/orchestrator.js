@@ -16,7 +16,11 @@ async function runAgentWorkflow(gatheringId) {
         const gathering = await db_1.prisma.gathering.findUnique({
             where: { id: gatheringId },
             include: {
-                responses: true, // Include all related responses
+                responses: {
+                    include: {
+                        user: true, // Include user data for each responses
+                    },
+                },
             },
         });
         // Validation: don't run agents if there's no data to analyse
@@ -34,10 +38,12 @@ async function runAgentWorkflow(gatheringId) {
         console.log(`✅ Preference analysis complete`);
         console.log(`   Recommended time: ${preferenceAnalysis.recommendedTimeSlot.label}`);
         console.log(`   Budget: $${preferenceAnalysis.budgetRange.min}-$${preferenceAnalysis.budgetRange.max}`);
-        console.log(`   Cuisines: ${preferenceAnalysis.cuisinePreferences.join(', ')}`);
+        console.log(`   Cuisines: ${preferenceAnalysis.cuisinePreferences.join(", ")}`);
         // Step 3: Run Venue Search Agent
         console.log(`🔍 Searching for venues...`);
-        const venueRecommendation = await (0, venue_agent_1.recommendVenues)(preferenceAnalysis, gathering.location);
+        const venueRecommendation = await (0, venue_agent_1.recommendVenues)(preferenceAnalysis, gathering.location, gathering.venueType, // Pass venueType from gathering
+        gathering.responses // Pass responses for richer context
+        );
         console.log(`✅ Venue recommendations complete`);
         console.log(`   Found ${venueRecommendation.recommendations.length} recommendations`);
         // Step 4: Save results to database in JSON field agentOutput, and update the status to COMPLETED
@@ -49,7 +55,7 @@ async function runAgentWorkflow(gatheringId) {
         const updatedGathering = await db_1.prisma.gathering.update({
             where: { id: gatheringId },
             data: {
-                status: 'COMPLETED',
+                status: "COMPLETED",
                 agentOutput: agentOutput,
                 updatedAt: new Date(),
             },
@@ -68,7 +74,7 @@ async function runAgentWorkflow(gatheringId) {
         await db_1.prisma.gathering.update({
             where: { id: gatheringId },
             data: {
-                status: 'FAILED',
+                status: "FAILED",
                 updatedAt: new Date(),
             },
         });

@@ -6,7 +6,12 @@ import {
   type PreferenceAnalysis,
 } from "./schemas";
 import { searchVenues, type VenueData } from "../services/google-places";
-import type { Response as GatheringResponse } from "@prisma/client"; // NEW: Import for type
+import type { Response, User } from "@prisma/client"; // Import both types
+
+// Define a type for Response WITH user data included
+type ResponseWithUser = Response & {
+  user: User | null; // User can be null if the user was deleted
+};
 
 /**
  * Venue Search Agent
@@ -15,8 +20,8 @@ import type { Response as GatheringResponse } from "@prisma/client"; // NEW: Imp
 export async function recommendVenues(
   preferenceAnalysis: PreferenceAnalysis,
   location: string,
-  venueType: string, // NEW: venueType from gathering
-  responses: GatheringResponse[] // Accept individual responses for context
+  venueType: string,
+  responses: ResponseWithUser[] // Use the extended type
 ): Promise<VenueRecommendation> {
   // Step 1: Build search query from preferences
   const cuisineQuery =
@@ -56,7 +61,8 @@ export async function recommendVenues(
           ? r.cuisinePreferences.join(", ")
           : "no preference";
 
-      return `Person ${idx + 1}:
+      const userName = r.user?.name || `Person ${idx + 1}`;
+      return `${userName}:
     - Budget: $${r.budgetMax || "flexible"}
     - Cuisine preferences: ${cuisinePrefs}
     - Dietary restrictions: ${r.dietaryRestrictions || "none"}
@@ -122,9 +128,9 @@ export async function recommendVenues(
   - Avoids generic phrases like "offers a high rating" or "fits the budget"
 
   Examples of GOOD reasoning:
-  ✅ "This venue has a dedicated gluten-free menu and vegetarian options, perfect for Person 1 and 
-  Person 3's needs. At $$, it sits comfortably in the $25-$30 budget range. The 4.7 rating reflects 
-  consistent quality for Italian cuisine, which Person 2 specifically requested."
+  ✅ "This venue has a dedicated gluten-free menu and vegetarian options, perfect for accommodating the group's 
+  dietary needs. At $$, it sits comfortably in the $25-$30 budget range. The 4.7 rating reflects consistent 
+  quality for Italian cuisine, which matches the group's top preference."
 
   Examples of BAD reasoning (DO NOT USE):
   ❌ "Offers a high rating and fits the budget requirements."

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 export declare const PreferenceAnalysisSchema: z.ZodObject<{
     recommendedTimeSlot: z.ZodObject<{
         index: z.ZodNumber;
@@ -21,6 +21,8 @@ export declare const VenueRecommendationSchema: z.ZodObject<{
         rating: z.ZodNumber;
         priceLevel: z.ZodNumber;
         cuisine: z.ZodString;
+        placeId: z.ZodString;
+        googleUrl: z.ZodString;
         reason: z.ZodString;
     }, z.core.$strip>>;
     recommendation: z.ZodString;
