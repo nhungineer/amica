@@ -14,7 +14,11 @@ export async function runAgentWorkflow(gatheringId: string) {
     const gathering = await prisma.gathering.findUnique({
       where: { id: gatheringId },
       include: {
-        responses: true, // Include all related responses
+        responses: {
+          include: {
+            user: true, // Include user data for each responses
+          },
+        },
       },
     });
     // Validation: don't run agents if there's no data to analyse

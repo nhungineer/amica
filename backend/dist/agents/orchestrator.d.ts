@@ -15,6 +15,7 @@ export declare function runAgentWorkflow(gatheringId: string): Promise<{
         timezone: string;
         timeOptions: import("@prisma/client/runtime/library").JsonValue;
         rsvpDeadline: Date;
+        venueType: import("@prisma/client").$Enums.VenueType;
         status: import("@prisma/client").$Enums.GatheringStatus;
         agentOutput: import("@prisma/client/runtime/library").JsonValue | null;
         organizerId: string;
@@ -42,6 +43,8 @@ export declare function runAgentWorkflow(gatheringId: string): Promise<{
                 rating: number;
                 priceLevel: number;
                 cuisine: string;
+                placeId: string;
+                googleUrl: string;
                 reason: string;
             }[];
             recommendation: string;

@@ -13,7 +13,7 @@ export const PreferenceAnalysisSchema = z.object({
   budgetRange: z.object({
     min: z.number().describe("Minimum budget in dollars"),
     max: z.number().describe("Maximum budget in dollars"),
-    currency: z.string().default("USD").describe("Currency code"),
+    currency: z.string().default("AUD").describe("Currency code"),
   }),
   cuisinePreferences: z
     .array(z.string())

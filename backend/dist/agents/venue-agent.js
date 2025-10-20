@@ -9,71 +9,109 @@ const google_places_1 = require("../services/google-places");
  * Venue Search Agent
  * Searches for venues using Google Places API and recommends the best matches
  */
-async function recommendVenues(preferenceAnalysis, location) {
+async function recommendVenues(preferenceAnalysis, location, venueType, responses // Use the extended type
+) {
     // Step 1: Build search query from preferences
     const cuisineQuery = preferenceAnalysis.cuisinePreferences.length > 0
         ? preferenceAnalysis.cuisinePreferences[0] // Use top cuisine preference
-        : 'restaurant';
-    const venueType = 'restaurant'; // TODO: Make this dynamic later
-    const searchQuery = `${cuisineQuery} ${venueType}`;
+        : "restaurant";
+    const searchQuery = `${cuisineQuery} ${venueType.toLowerCase()}`;
     // Step 2: Get venues from Google Places API
     let venues;
     try {
-        venues = await (0, google_places_1.searchVenues)(searchQuery, location, 5000);
+        venues = await (0, google_places_1.searchVenues)(searchQuery, location, venueType, preferenceAnalysis.dietaryRestrictions // Pass dietary retrictions to search venues
+        );
         if (venues.length === 0) {
             // Fallback: search for generic restaurants if cuisine-specific search fails
-            venues = await (0, google_places_1.searchVenues)('restaurant', location, 5000);
+            venues = await (0, google_places_1.searchVenues)(venueType, location, venueType, preferenceAnalysis.dietaryRestrictions);
         }
     }
     catch (error) {
-        console.error('Error searching venues:', error);
-        throw new Error('Failed to search for venues');
+        console.error("Error searching venues:", error);
+        throw new Error("Failed to search for venues");
     }
-    // Step 3: Build prompt for AI to analyze venues
+    // NEW: Build context about individual responses for richer reasoning
+    const responseContext = responses
+        .map((r, idx) => {
+        const cuisinePrefs = Array.isArray(r.cuisinePreferences) && r.cuisinePreferences.length > 0
+            ? r.cuisinePreferences.join(", ")
+            : "no preference";
+        const userName = r.user?.name || `Person ${idx + 1}`;
+        return `${userName}:
+    - Budget: $${r.budgetMax || "flexible"}
+    - Cuisine preferences: ${cuisinePrefs}
+    - Dietary restrictions: ${r.dietaryRestrictions || "none"}
+    - Additional notes: ${r.additionalNotes || "none"}`;
+    })
+        .join("\n");
+    // Step 3: Build enhanced prompt for AI to analyze venues
     const prompt = `
-  You are a venue recommendation specialist helping choose the best restaurant for a 
-  group gathering.
+  You are a venue recommendation specialist helping organize a gathering for ${responses.length} 
+  people.
 
-  GROUP PREFERENCES (from preference analysis):
+  INDIVIDUAL RESPONSES (pay attention to specific needs and notes):
+  ${responseContext}
+
+  GROUP CONSENSUS (from preference analysis):
   - Recommended time: ${preferenceAnalysis.recommendedTimeSlot.label} 
-  (${preferenceAnalysis.recommendedTimeSlot.availableCount} people available)
-  - Budget range: 
-  $${preferenceAnalysis.budgetRange.min}-$${preferenceAnalysis.budgetRange.max} per 
+    (${preferenceAnalysis.recommendedTimeSlot.availableCount} people available)
+  - Budget range: $${preferenceAnalysis.budgetRange.min}-$${preferenceAnalysis.budgetRange.max} per 
   person
-  - Cuisine preferences: ${preferenceAnalysis.cuisinePreferences.join(', ')}
-  - Dietary restrictions: ${preferenceAnalysis.dietaryRestrictions.length > 0 ?
-        preferenceAnalysis.dietaryRestrictions.join(', ') : 'none'}
+  - Cuisine preferences: ${preferenceAnalysis.cuisinePreferences.join(", ")}
+  - Dietary restrictions: ${preferenceAnalysis.dietaryRestrictions.length > 0
+        ? preferenceAnalysis.dietaryRestrictions.join(", ")
+        : "none"}
   - Analysis summary: ${preferenceAnalysis.summary}
 
-  AVAILABLE VENUES (from Google Places API):
-  ${venues.map((v, idx) => `
+  AVAILABLE VENUES (from Google Places, sorted by relevance):
+  ${venues
+        .map((v, idx) => `
   ${idx + 1}. ${v.name}
      - Address: ${v.address}
      - Rating: ${v.rating}/5
-     - Price Level: ${'$'.repeat(v.priceLevel)} (1=cheap, 4=expensive)
+     - Price Level: ${"$".repeat(v.priceLevel)} (1=cheap, 4=expensive)
      - Cuisine: ${v.cuisine}
      - Place ID: ${v.placeId}
-  `).join('\n')}
+     - Google Maps: ${v.googleUrl}
+  `)
+        .join("\n")}
 
   TASK:
-  Analyze these venues and select the TOP 3 that best match the group's preferences.
+  Select the TOP 3 venues that best match this specific group's needs.
 
-  Consider:
-  1. Budget compatibility (price level should match budget range)
-  2. Cuisine match (prioritize cuisines from preferences)
-  3. Rating (higher is better, but don't ignore budget/cuisine fit)
-  4. Can accommodate dietary restrictions (based on cuisine type)
+  EVALUATION CRITERIA (in priority order):
+  1. **Dietary Compatibility**: Can the venue accommodate ALL dietary restrictions? (This is 
+  non-negotiable)
+  2. **Budget Fit**: Does the price level align with the group's budget range?
+  3. **Cuisine Match**: Does it match the group's cuisine preferences?
+  4. **Quality**: Rating should be 4.0+ when possible
+  5. **Group Size**: Can it accommodate ${responses.length} people comfortably?
 
-  For each recommendation, explain WHY it's a good fit for this group.
+  IMPORTANT: For each recommendation, write a SPECIFIC, DETAILED reason that:
+  - Mentions HOW it accommodates the dietary restrictions (e.g., "has extensive vegetarian menu 
+  section")
+  - Explains WHY the price level fits the budget
+  - References specific group needs from the individual responses
+  - Avoids generic phrases like "offers a high rating" or "fits the budget"
 
-  Provide an overall recommendation for the organizer on next steps.
+  Examples of GOOD reasoning:
+  ✅ "This venue has a dedicated gluten-free menu and vegetarian options, perfect for accommodating the group's 
+  dietary needs. At $$, it sits comfortably in the $25-$30 budget range. The 4.7 rating reflects consistent 
+  quality for Italian cuisine, which matches the group's top preference."
+
+  Examples of BAD reasoning (DO NOT USE):
+  ❌ "Offers a high rating and fits the budget requirements."
+  ❌ "Provides options that satisfy dietary restrictions."
+
+  Provide an overall recommendation for the organizer on next steps (e.g., "Book early for Saturday 
+  lunch as these venues fill up quickly").
 
   Current timestamp: ${new Date().toISOString()}
   Location searched: ${location}
   `;
     // Step 4: Call AI to analyze and recommend
     const result = await (0, ai_1.generateObject)({
-        model: (0, openai_1.openai)('gpt-4o'),
+        model: (0, openai_1.openai)("gpt-4o"),
         schema: schemas_1.VenueRecommendationSchema,
         prompt: prompt,
     });
