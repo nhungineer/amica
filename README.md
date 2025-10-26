@@ -28,8 +28,6 @@ Infrastructure
 
 ## Features
 
-[Current, as of 2025-10-16]
-
 - Basic authentication flow with magic link (Resend & JWT)
 - Create gathering with title, location name, timezone selection, duration
 - Submit responses with preferences: timeslots, max budget, cuisine preferences, dietary restrictions (cuisine and dietary as multi-select options, not free text)
@@ -39,9 +37,7 @@ Infrastructure
 2. Venue agent calls Google Places API to search for venue based on the preference analysis, and select the top 3 venues for recommendations
 3. Display the 3 venues that are best suited for the group and recommended next steps
 
-## Roadmap
-
-Week 12 (13 - 19 Oct 2025)
+[Features added]
 
 - Magic link authentication (Resend API) ✅
 - Add auth to SubmitResponse component ✅
@@ -49,8 +45,12 @@ Week 12 (13 - 19 Oct 2025)
 - Dynamic timeslot creation ✅
 - Polish UX/UI for frontend ✅
 - Replace free text in cuisine and dietary selection with structured data ✅
+- Enhanced agent logirecovery ✅
+- Instrument LangSmith to observe traces for preference agent, venue agent and Google Places API ✅
+
+## Roadmap
+
 - Error handling and recovery
-- Enhanced agent logic
 - Dashboard view for organisers
 - Dashboard view for invitees
 

@@ -7,6 +7,7 @@ import {
 } from "./schemas";
 import { searchVenues, type VenueData } from "../services/google-places";
 import type { Response, User } from "@prisma/client"; // Import both types
+import { traceable } from "langsmith/traceable"; // Add LangSmith for traceability
 
 // Define a type for Response WITH user data included
 type ResponseWithUser = Response & {
@@ -17,60 +18,61 @@ type ResponseWithUser = Response & {
  * Venue Search Agent
  * Searches for venues using Google Places API and recommends the best matches
  */
-export async function recommendVenues(
-  preferenceAnalysis: PreferenceAnalysis,
-  location: string,
-  venueType: string,
-  responses: ResponseWithUser[] // Use the extended type
-): Promise<VenueRecommendation> {
-  // Step 1: Build search query from preferences
-  const cuisineQuery =
-    preferenceAnalysis.cuisinePreferences.length > 0
-      ? preferenceAnalysis.cuisinePreferences[0] // Use top cuisine preference
-      : "restaurant";
-  const searchQuery = `${cuisineQuery} ${venueType.toLowerCase()}`;
+export const recommendVenues = traceable(
+  async function recommendVenues(
+    preferenceAnalysis: PreferenceAnalysis,
+    location: string,
+    venueType: string,
+    responses: ResponseWithUser[] // Use the extended type
+  ): Promise<VenueRecommendation> {
+    // Step 1: Build search query from preferences
+    const cuisineQuery =
+      preferenceAnalysis.cuisinePreferences.length > 0
+        ? preferenceAnalysis.cuisinePreferences[0] // Use top cuisine preference
+        : "restaurant";
+    const searchQuery = `${cuisineQuery} ${venueType.toLowerCase()}`;
 
-  // Step 2: Get venues from Google Places API
-  let venues: VenueData[];
-  try {
-    venues = await searchVenues(
-      searchQuery,
-      location,
-      venueType,
-      preferenceAnalysis.dietaryRestrictions // Pass dietary retrictions to search venues
-    );
-
-    if (venues.length === 0) {
-      // Fallback: search for generic restaurants if cuisine-specific search fails
+    // Step 2: Get venues from Google Places API
+    let venues: VenueData[];
+    try {
       venues = await searchVenues(
-        venueType,
+        searchQuery,
         location,
         venueType,
-        preferenceAnalysis.dietaryRestrictions
+        preferenceAnalysis.dietaryRestrictions // Pass dietary retrictions to search venues
       );
-    }
-  } catch (error) {
-    console.error("Error searching venues:", error);
-    throw new Error("Failed to search for venues");
-  }
-  // NEW: Build context about individual responses for richer reasoning
-  const responseContext = responses
-    .map((r, idx) => {
-      const cuisinePrefs =
-        Array.isArray(r.cuisinePreferences) && r.cuisinePreferences.length > 0
-          ? r.cuisinePreferences.join(", ")
-          : "no preference";
 
-      const userName = r.user?.name || `Person ${idx + 1}`;
-      return `${userName}:
+      if (venues.length === 0) {
+        // Fallback: search for generic restaurants if cuisine-specific search fails
+        venues = await searchVenues(
+          venueType,
+          location,
+          venueType,
+          preferenceAnalysis.dietaryRestrictions
+        );
+      }
+    } catch (error) {
+      console.error("Error searching venues:", error);
+      throw new Error("Failed to search for venues");
+    }
+    // NEW: Build context about individual responses for richer reasoning
+    const responseContext = responses
+      .map((r, idx) => {
+        const cuisinePrefs =
+          Array.isArray(r.cuisinePreferences) && r.cuisinePreferences.length > 0
+            ? r.cuisinePreferences.join(", ")
+            : "no preference";
+
+        const userName = r.user?.name || `Person ${idx + 1}`;
+        return `${userName}:
     - Budget: $${r.budgetMax || "flexible"}
     - Cuisine preferences: ${cuisinePrefs}
     - Dietary restrictions: ${r.dietaryRestrictions || "none"}
     - Additional notes: ${r.additionalNotes || "none"}`;
-    })
-    .join("\n");
-  // Step 3: Build enhanced prompt for AI to analyze venues
-  const prompt = `
+      })
+      .join("\n");
+    // Step 3: Build enhanced prompt for AI to analyze venues
+    const prompt = `
   You are a venue recommendation specialist helping organize a gathering for ${
     responses.length
   } 
@@ -83,8 +85,8 @@ export async function recommendVenues(
   - Recommended time: ${preferenceAnalysis.recommendedTimeSlot.label} 
     (${preferenceAnalysis.recommendedTimeSlot.availableCount} people available)
   - Budget range: $${preferenceAnalysis.budgetRange.min}-$${
-    preferenceAnalysis.budgetRange.max
-  } per 
+      preferenceAnalysis.budgetRange.max
+    } per 
   person
   - Cuisine preferences: ${preferenceAnalysis.cuisinePreferences.join(", ")}
   - Dietary restrictions: ${
@@ -143,12 +145,22 @@ export async function recommendVenues(
   Location searched: ${location}
   `;
 
-  // Step 4: Call AI to analyze and recommend
-  const result = await generateObject({
-    model: openai("gpt-4o"),
-    schema: VenueRecommendationSchema,
-    prompt: prompt,
-  });
+    // Step 4: Call AI to analyze and recommend
+    const result = await generateObject({
+      model: openai("gpt-4o"),
+      schema: VenueRecommendationSchema,
+      prompt: prompt,
+    });
 
-  return result.object;
-}
+    return result.object;
+  },
+  // Configuration object for Langsmith
+  {
+    name: "Venue Recommendation Agent",
+    run_type: "llm",
+    metadata: {
+      agent_type: "venue_recommender",
+      model: "gpt-4o",
+    },
+  }
+);
