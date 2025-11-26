@@ -30,7 +30,7 @@ const PORT = Number(process.env.PORT) || 3000;
 app.use(
   cors({
     origin: [
-      "https://amica-rho.vercel.app/", // Production frontend to Vercel
+      "https://amica-rho.vercel.app", // Production frontend to Vercel
       "http://localhost:5173", // Local development
     ],
     credentials: true,
