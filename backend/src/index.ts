@@ -30,7 +30,7 @@ const PORT = Number(process.env.PORT) || 3000;
 app.use(
   cors({
     origin: [
-      "https://nhungineer.github.io", // Production frontend (GitHub Pages)
+      "https://amica-rho.vercel.app/", // Production frontend to Vercel
       "http://localhost:5173", // Local development
     ],
     credentials: true,
