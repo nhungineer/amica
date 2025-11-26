@@ -7,7 +7,7 @@ import { AuthProvider } from "./AuthContext.tsx";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter basename="/amica">
+    <BrowserRouter>
       <AuthProvider>
         <App />
       </AuthProvider>
